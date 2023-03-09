@@ -19,7 +19,7 @@ import TysWiredIn as GHC (anyTyCon)
 import UniqDFM as GHC (eltsUDFM)
 import UniqSupply as GHC (uniqFromSupply, mkSplitUniqSupply)
 import Var as GHC (Var(..))
-import HsExtension
+import GHC.Hs.Extension
 
 import Control.Applicative (Applicative(..), (<$>), Alternative(..))
 import Control.Exception (evaluate, throw)
@@ -50,20 +50,21 @@ addTypeInfos bnds mod = do
         where fixity = if any (any ((getOccName id ==) . getOccName . (^. _1))) (drop 1 sc)
                           then Nothing
                           else fmap (snd . snd) $ List.find (\(mod,(occ,_)) -> Just mod == (nameModule_maybe $ varName id) && occ == getOccName id) fixities
-  evalStateT (semaTraverse
-    (AST.SemaTrf
-      (\ni -> case (AST.semanticsSourceInfo ni, AST.semanticsName ni) of
-                (_, Just name) -> lift $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) <$> getType name
-                (Just l@(RealSrcSpan loc), _)
-                  -> case Map.lookup l locMapping of
-                            Just id -> return $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) id
-                            _ -> do (none,rest) <- gets (break ((\case (RealSrcSpan sp) -> sp `containsSpan` loc) . fst))
-                                    case rest of [] -> throw $ ConvertionProblem emptyCallStack (RealSrcSpan loc) "Ambiguous or implicit name missing"
-                                                 ((_,id):more) -> do put (none ++ more)
-                                                                     return $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) id
-                _ -> convProblem "addTypeInfos: Cannot access a the semantics of a name.")
-      pure fetchLitType (lift . trfImportInfoM getType) (lift . trfModuleInfoM getType) pure
-        pure) mod) (extractSigIds bnds ++ extractSigBindIds bnds)
+  undefined
+  -- evalStateT (semaTraverse
+  --   (AST.SemaTrf
+  --     (\ni -> case (AST.semanticsSourceInfo ni, AST.semanticsName ni) of
+  --               (_, Just name) -> lift $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) <$> getType name
+  --               (Just l@(RealSrcSpan loc), _)
+  --                 -> case Map.lookup l locMapping of
+  --                           Just id -> return $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) id
+  --                           _ -> do (none,rest) <- gets (break ((\case (RealSrcSpan sp) -> sp `containsSpan` loc) . fst))
+  --                                   case rest of [] -> throw $ ConvertionProblem emptyCallStack (RealSrcSpan loc) "Ambiguous or implicit name missing"
+  --                                                ((_,id):more) -> do put (none ++ more)
+  --                                                                    return $ createCName (AST.semanticsScope ni) (AST.semanticsDefining ni) id
+  --               _ -> convProblem "addTypeInfos: Cannot access a the semantics of a name.")
+  --     pure fetchLitType (lift . trfImportInfoM getType) (lift . trfModuleInfoM getType) pure
+  --       pure) mod) (extractSigIds bnds ++ extractSigBindIds bnds)
   where locMapping = Map.fromList $ map (\(L l id) -> (l, id)) $ extractExprIds bnds
         getType' :: Type -> Name -> Ghc Id
         getType' ut name = fromMaybe (mkVanillaGlobal name ut) <$> ((<|> Map.lookup name ids) <$> getTopLevelId name)
@@ -93,7 +94,7 @@ addTypeInfos bnds mod = do
                 patLits = concatMap universeBi . bagToList $ bnds
 
                 decompPatLit :: LPat GhcTc -> Maybe (SrcSpan, Type)
-                decompPatLit (L loc (NPat llit _ _ _)) = Just (loc, llit)
+                -- decompPatLit (L loc (NPat llit _ _ _)) = Just (loc, llit)
                 decompPatLit x = Nothing
 
 

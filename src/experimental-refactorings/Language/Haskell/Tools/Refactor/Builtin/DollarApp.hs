@@ -18,14 +18,15 @@ tryItOut = tryRefactor (localRefactoring . dollarApp)
 type DollarMonad = StateT [SrcSpan] LocalRefactor
 
 dollarApp :: RealSrcSpan -> LocalRefactoring
-dollarApp sp = flip evalStateT [] . ((nodesContained sp !~ (\e -> get >>= replaceExpr e))
-                                        >=> (biplateRef !~ parenExpr))
+dollarApp sp = undefined
+  -- flip evalStateT [] . ((nodesContained sp !~ (\e -> get >>= replaceExpr e))
+  --                                       >=> (biplateRef !~ parenExpr))
 
 replaceExpr :: Expr -> [SrcSpan] -> DollarMonad Expr
 replaceExpr expr@(App _ (Paren (InfixApp _ op arg))) replacedRanges
   | not (getRange arg `elem` replacedRanges)
-  , semanticsName (op ^. operatorName) /= Just dollarName
-  , case semanticsFixity (op ^. operatorName) of Just (Fixity _ p _) | p > 0 -> False; _ -> True
+  -- , semanticsName (op ^. operatorName) /= Just dollarName
+  -- , case semanticsFixity (op ^. operatorName) of Just (Fixity _ p _) | p > 0 -> False; _ -> True
   = return expr
 replaceExpr (App fun (Paren arg)) _ = do modify $ (getRange arg :)
                                          mkInfixApp fun <$> lift (referenceOperator dollarName) <*> pure arg

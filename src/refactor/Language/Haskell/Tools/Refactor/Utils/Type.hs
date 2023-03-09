@@ -35,12 +35,12 @@ typeExpr e = do usupp <- liftIO $ mkSplitUniqSupply 'z'
                 evalStateT (typeExpr' e) (uniqsFromSupply usupp)
 
 typeExpr' :: Expr -> StateT [Unique] Ghc GHC.Type
-typeExpr' (Var n) = return $ idType $ semanticsId (n ^. simpleName)
+-- typeExpr' (Var n) = return $ idType $ semanticsId (n ^. simpleName)
 typeExpr' (Lit l) = literalType' l
 typeExpr' (InfixApp lhs op rhs) = do
   lhsType <- typeExpr' lhs
   rhsType <- typeExpr' rhs
-  let opType = idType $ semanticsId (op ^. operatorName)
+  let opType = undefined --idType $ semanticsId (op ^. operatorName)
   let (opt, repack) = splitType' opType
   case splitFunTys opt of
     (lhsT:rhsT:rest, resTyp) -> do
@@ -48,7 +48,7 @@ typeExpr' (InfixApp lhs op rhs) = do
       return $ maybe id substTy subst $ repack (mkFunTys rest resTyp)
     _ -> resultType
 typeExpr' (PrefixApp op rhs) = do
-  let opType = idType $ semanticsId (op ^. operatorName)
+  let opType = undefined --idType $ semanticsId (op ^. operatorName)
   argType <- typeExpr' rhs
   let (ft, repack) = splitType' opType
   case splitFunTy_maybe ft of
@@ -98,7 +98,7 @@ typeExpr' (List elems) = do
                                      return $ pack $ mkListTy typ
 typeExpr' (Paren inner) = typeExpr' inner
 typeExpr' (LeftSection lhs op) = do
-  let opType = idType $ semanticsId (op ^. operatorName)
+  let opType = undefined -- idType $ semanticsId (op ^. operatorName)
   argType <- typeExpr' lhs
   let (ft, repack) = splitType' opType
   case splitFunTy_maybe ft of 
@@ -107,7 +107,7 @@ typeExpr' (LeftSection lhs op) = do
       return $ maybe id substTy subst $ repack resTyp
     _ -> resultType
 typeExpr' (RightSection op rhs) = do
-  let opType = idType $ semanticsId (op ^. operatorName)
+  let opType = undefined --idType $ semanticsId (op ^. operatorName)
   argType <- typeExpr' rhs
   let (ft, repack) = splitType' opType
   case splitFunTys ft of 
@@ -116,7 +116,7 @@ typeExpr' (RightSection op rhs) = do
       return $ maybe id substTy subst $ repack (mkFunTys (arg1:rest) resTyp)
     _ -> resultType
 typeExpr' (AST.RecCon name _) 
-  = do def <- lift $ maybe (return Nothing) GHC.lookupName (semanticsName (name ^. simpleName))
+  = do def <- undefined --lift $ maybe (return Nothing) GHC.lookupName (semanticsName (name ^. simpleName))
        case def of 
          Just (AConLike (RealDataCon con)) -> return $ dataConSig con ^. _4
          Just (AConLike (PatSynCon patSyn)) -> return $ patSynSig patSyn ^. _6
@@ -160,6 +160,8 @@ appTypeMatches insts functionT argTs -- TODO: check instances
 splitType' :: GHC.Type -> (GHC.Type, GHC.Type -> GHC.Type)
 splitType' t = case splitType t of (t', repack) -> (t', fst . repack emptyTCvSubst [])
 
+mkFunTys = undefined
+
 splitType :: GHC.Type -> (GHC.Type, TCvSubst -> [ClsInst] -> GHC.Type -> (GHC.Type, Bool))
 splitType typ =
   let (foralls, typ') = splitForAllTys typ
@@ -192,10 +194,10 @@ litType :: GHC.Name -> StateT [Unique] Ghc GHC.Type
 litType constraint = do 
   litty <- lift $ lookupName constraint
   case litty of
-    Just (ATyCon numTyCon) -> do
-      name <- newName
-      let tv = mkTyVar name (GHC.typeKind boolTy)
-      return $ mkInvForAllTys [tv] $ mkFunTy (mkTyConApp numTyCon [mkTyVarTy tv]) (mkTyVarTy tv)
+    -- Just (ATyCon numTyCon) -> do
+    --   name <- newName
+    --   let tv = mkTyVar name (GHC.typeKind boolTy)
+    --   return $ mkInvForAllTys [tv] $ mkFunTy (mkTyConApp numTyCon [mkTyVarTy tv]) (mkTyVarTy tv)
     _ -> error "Type.litType: not found"
 
 newName :: Monad m => StateT [Unique] m GHC.Name

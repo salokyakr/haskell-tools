@@ -26,28 +26,28 @@ chkConDeclForExistentials = conditionalAny chkConDeclForExistentials' [GADTs, Ex
 -- , then only GADTSyntax is needed. If any constructor's lookup fails
 -- , we add MissingInformation.
 chkGADTsGadtConDecl' :: CheckNode GadtConDecl
-chkGADTsGadtConDecl' conDecl = do
-  let conNames   = conDecl ^. (gadtConNames & annListElems)
-  mres <- mapM (runMaybeT . isVanillaDataConNameM) conNames
-  addEvidence_ GADTSyntax conDecl
-  if | any isNothing mres ->
-       addRelationMI (GADTs `lOr` ExistentialQuantification) conDecl
-     | any (not . fromJust) mres ->
-       addRelation (GADTs `lOr` ExistentialQuantification) conDecl
-     | otherwise -> return conDecl
+chkGADTsGadtConDecl' conDecl = undefined
+  -- let conNames   = conDecl ^. (gadtConNames & annListElems)
+  -- -- mres <- mapM (runMaybeT . isVanillaDataConNameM) conNames
+  -- addEvidence_ GADTSyntax conDecl
+  -- if | any isNothing mres ->
+  --      addRelationMI (GADTs `lOr` ExistentialQuantification) conDecl
+  --    | any (not . fromJust) mres ->
+  --      addRelation (GADTs `lOr` ExistentialQuantification) conDecl
+  --    | otherwise -> return conDecl
 
 -- | Extracts the name from a ConDecl, and checks whether it is a vanilla
 -- data constructor. Ifthe lookup fails, adds MissingInformation.
 chkConDeclForExistentials' :: CheckNode ConDecl
-chkConDeclForExistentials' conDecl =
-  fromMaybeTM (addRelationMI (GADTs `lOr` ExistentialQuantification) conDecl) $
-  case conDecl ^. element of
-    UConDecl _ _ n _         -> chkName n
-    URecordDecl _ _ n _      -> chkName n
-    UInfixConDecl _ _ _ op _ -> chkName (op ^. operatorName)
-  where chkName :: HasNameInfo' n => n -> MaybeT ExtMonad ConDecl
-        chkName n = do
-          isVanilla <- isVanillaDataConNameM n
-          if isVanilla
-            then return conDecl
-            else lift . addRelation (GADTs `lOr` ExistentialQuantification) $ conDecl
+chkConDeclForExistentials' conDecl = undefined
+  -- fromMaybeTM (addRelationMI (GADTs `lOr` ExistentialQuantification) conDecl) $
+  -- case conDecl ^. element of
+  --   UConDecl _ _ n _         -> chkName n
+  --   URecordDecl _ _ n _      -> chkName n
+  --   UInfixConDecl _ _ _ op _ -> chkName (op ^. operatorName)
+  -- where chkName :: HasNameInfo' n => n -> MaybeT ExtMonad ConDecl
+  --       chkName n = do
+  --         isVanilla <- isVanillaDataConNameM n
+  --         if isVanilla
+  --           then return conDecl
+  --           else lift . addRelation (GADTs `lOr` ExistentialQuantification) $ conDecl

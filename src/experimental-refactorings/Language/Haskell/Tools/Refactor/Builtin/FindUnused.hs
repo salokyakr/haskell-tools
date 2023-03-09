@@ -30,25 +30,27 @@ findUnusedRefactoring :: RefactoringChoice
 findUnusedRefactoring = ProjectRefactoring "FindUnused" findUnused
 
 findUnused :: ProjectRefactoring
-findUnused mods = do let (_, st) = flip runState initState $ mapM (biplateRef !~ recordName) (map snd mods)
-                         unused = toList ((st ^. defined) \\ (st ^. used))
-                     unusedDefs <- filterM (fmap not . isRecordName) unused
-                     let groupedUnused = groupBy ((==) `on` nameModule_maybe) unusedDefs
-                     liftIO $ putStrLn $ "Unused definitions:"
-                     liftIO $ putStrLn
-                            $ unlines
-                            $ map (\ls -> (showSDocUnsafe $ ppr $ nameModule_maybe (head ls)) ++ ": "
-                                             ++ intercalate ", " (map (showSDocUnsafe . ppr) ls)) 
-                            $ groupedUnused
-                     return [] -- no changes
-  where isRecordName n = do tt <- lookupName n
-                            case tt of Just (AnId id) -> return $ isRecordSelector id
-                                       _ -> return False
+findUnused mods = undefined
+--     do let (_, st) = flip runState initState $ mapM (biplateRef !~ recordName) (map snd mods)
+--                          unused = toList ((st ^. defined) \\ (st ^. used))
+--                      unusedDefs <- filterM (fmap not . isRecordName) unused
+--                      let groupedUnused = groupBy ((==) `on` nameModule_maybe) unusedDefs
+--                      liftIO $ putStrLn $ "Unused definitions:"
+--                      liftIO $ putStrLn
+--                             $ unlines
+--                             $ map (\ls -> (showSDocUnsafe $ ppr $ nameModule_maybe (head ls)) ++ ": "
+--                                              ++ intercalate ", " (map (showSDocUnsafe . ppr) ls)) 
+--                             $ groupedUnused
+--                      return [] -- no changes
+--   where isRecordName n = do tt <- lookupName n
+--                             case tt of Just (AnId id) -> return $ isRecordSelector id
+--                                        _ -> return False
 
 recordName :: QualifiedName -> State UnusedState QualifiedName
-recordName n = do let name = semanticsName n
-                      isDefined = semanticsDefining n 
-                  case name of Just semaName -> if isDefined then modify $ defined .- insert semaName
-                                                             else modify $ used .- insert semaName
-                               Nothing -> return ()
-                  return $ trace ("\n### Name: " ++ prettyPrint n ++ " " ++ show isDefined) $ n
+recordName n = undefined
+    -- do let name = semanticsName n
+    --                   isDefined = semanticsDefining n 
+    --               case name of Just semaName -> if isDefined then modify $ defined .- insert semaName
+    --                                                          else modify $ used .- insert semaName
+    --                            Nothing -> return ()
+    --               return $ trace ("\n### Name: " ++ prettyPrint n ++ " " ++ show isDefined) $ n

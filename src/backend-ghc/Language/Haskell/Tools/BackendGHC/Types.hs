@@ -2,16 +2,16 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, LiberalTypeSynonyms #-}
 
 -- | Functions that convert the type-related elements of the GHC AST to corresponding elements in the Haskell-tools AST representation
 module Language.Haskell.Tools.BackendGHC.Types where
 
 import ApiAnnotation as GHC (AnnKeywordId(..))
-import HsExpr (HsSplice(..))
-import HsTypes as GHC
+import GHC.Hs.Expr (HsSplice(..))
+import GHC.Hs.Types as GHC
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Control.Applicative (Applicative(..), (<$>), Alternative(..))
 import Control.Monad.Reader.Class (asks)
@@ -40,9 +40,9 @@ trfType typ | RealSrcSpan loce <- getLoc typ
 trfType' :: forall n r p . (TransformName n r, n ~ GhcPass p, HasCallStack) => HsType n -> Trf (AST.UType (Dom r) RangeStage)
 trfType' = trfType'' where
   trfType'' :: HsType n -> Trf (AST.UType (Dom r) RangeStage)
-  trfType'' (HsForAllTy _ [] typ) = trfType' (unLoc typ)
-  trfType'' (HsForAllTy _ bndrs typ) = AST.UTyForall <$> defineTypeVars (trfBindings bndrs)
-                                                     <*> addToScope bndrs (trfType typ)
+  -- trfType'' (HsForAllTy _ [] typ) = trfType' (unLoc typ)
+  -- trfType'' (HsForAllTy _ bndrs typ) = AST.UTyForall <$> defineTypeVars (trfBindings bndrs)
+                                                    --  <*> addToScope bndrs (trfType typ)
   trfType'' (HsQualTy _ (L _ []) typ) = trfType' (unLoc typ)
   trfType'' (HsQualTy _ ctx typ) = AST.UTyCtx <$> (fromJust . (^. annMaybe) <$> trfCtx atTheStart ctx)
                                               <*> trfType typ

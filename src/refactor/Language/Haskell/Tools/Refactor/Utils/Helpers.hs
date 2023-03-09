@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, LiberalTypeSynonyms #-}
 
 -- | Helper functions for defining refactorings.
 module Language.Haskell.Tools.Refactor.Utils.Helpers where

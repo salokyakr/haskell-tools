@@ -188,10 +188,10 @@ chkDerivingClause checker d@(DerivingMulti xs) = (annList !~ checker) xs >> retu
 -- checks whether the class is stock, and if it is, returns its name
 nameFromStock :: InstanceHead -> Maybe GHC.Name
 nameFromStock x
-  | InstanceHead name <- skipParens x,
-    Just sname <- semanticsName name,
-    isStockClass sname
-    = Just sname
+  -- | InstanceHead name <- skipParens x,
+  --   Just sname <- semanticsName name,
+  --   isStockClass sname
+  --   = Just sname
   | otherwise = Nothing
 
 chkClassForData :: CheckNode InstanceHead

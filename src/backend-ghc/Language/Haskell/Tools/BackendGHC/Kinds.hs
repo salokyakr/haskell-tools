@@ -13,11 +13,11 @@ import Data.Data
 
 import ApiAnnotation as GHC (AnnKeywordId(..))
 import FastString as GHC (unpackFS)
-import HsTypes as GHC
+import GHC.Hs.Types as GHC
 import Name as GHC (occNameString, nameOccName, isWiredInName)
 import RdrName as GHC (RdrName(..))
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 import Outputable
 
 import Language.Haskell.Tools.AST (Ann, AnnMaybeG, Dom, RangeStage, HasNoSemanticInfo)
@@ -43,11 +43,11 @@ trfKind = trfLocNoSema trfKind'
 
 trfKind' :: forall n r p . (TransformName n r, Outputable (HsType n), Data (HsType n), n ~ GhcPass p) => HsKind n -> Trf (AST.UKind (Dom r) RangeStage)
 trfKind' = trfKind'' where
-  trfKind'' (HsTyVar _ _ (rdrName @n . unLoc -> Exact n))
-    | isWiredInName n && occNameString (nameOccName n) == "*"
-    = pure AST.UStarKind
-    | isWiredInName n && occNameString (nameOccName n) == "#"
-    = pure AST.UUnboxKind
+  -- trfKind'' (HsTyVar _ _ (rdrName @n . unLoc -> Exact n))
+  --   | isWiredInName n && occNameString (nameOccName n) == "*"
+  --   = pure AST.UStarKind
+  --   | isWiredInName n && occNameString (nameOccName n) == "#"
+  --   = pure AST.UUnboxKind
   trfKind'' (HsStarTy _ _) = pure AST.UStarKind
   trfKind'' (HsParTy _ kind) = AST.UParenKind <$> trfKind kind
   trfKind'' (HsFunTy _ k1 k2) = AST.UFunKind <$> trfKind k1 <*> trfKind k2

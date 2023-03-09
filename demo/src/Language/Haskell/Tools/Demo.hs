@@ -130,10 +130,10 @@ updateClient dir (InitialProject modules) = do
     lift $ setTargets (map ((\modName -> Target (TargetModule (GHC.mkModuleName modName)) True Nothing) . fst) modules)
     reloadAllMods dir
     return Nothing
-updateClient _ (PerformRefactoring "UpdateAST" modName _ _) = do
-    mod <- gets (find ((modName ==) . (\(_,m,_) -> m) . fst) . Map.assocs . (^. refSessMods))
-    case mod of Just (_,m) -> return $ Just $ ASTViewContent $ astDebug m
-                Nothing -> return $ Just $ ErrorMessage "The module is not found"
+-- updateClient _ (PerformRefactoring "UpdateAST" modName _ _) = do
+--     mod <- gets (find ((modName ==) . (\(_,m,_) -> m) . fst) . Map.assocs . (^. refSessMods))
+--     case mod of Just (_,m) -> return $ Just $ ASTViewContent $ astDebug m
+--                 Nothing -> return $ Just $ ErrorMessage "The module is not found"
 updateClient _ (PerformRefactoring "TestErrorLogging" _ _ _) = error "This is a test"
 updateClient dir (PerformRefactoring refact modName selection args) = do
     mod <- gets (find ((modName ==) . (\(_,m,_) -> m) . fst) . Map.assocs . (^. refSessMods))

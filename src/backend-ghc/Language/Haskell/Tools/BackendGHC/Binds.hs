@@ -12,21 +12,21 @@ module Language.Haskell.Tools.BackendGHC.Binds where
 import ApiAnnotation as GHC (AnnKeywordId(..))
 import Bag as GHC (bagToList)
 import BasicTypes as GHC
-import HsBinds as GHC
-import HsExpr as GHC
-import HsPat as GHC (LPat)
-import HsTypes as GHC (SrcStrictness(..), HsWildCardBndrs(..), HsImplicitBndrs(..))
-import Name as GHC (isSymOcc)
-import PlaceHolder as GHC (NameOrRdrName)
+import GHC.Hs.Binds as GHC
+import GHC.Hs.Expr as GHC
+import GHC.Hs.Pat as GHC (LPat)
+import GHC.Hs.Types as GHC (SrcStrictness(..), HsWildCardBndrs(..), HsImplicitBndrs(..))
+import Name as GHC (isSymOcc, occName)
+-- import PlaceHolder as GHC (NameOrRdrName)
 import SrcLoc as GHC
-import HsExtension (GhcPass, IdP)
+import GHC.Hs.Extension (GhcPass, IdP)
 
 import Control.Monad.Reader (Monad(..), mapM, asks)
 import Data.List
 import Data.Function (on)
 
 import Language.Haskell.Tools.BackendGHC.Exprs (trfExpr)
-import Language.Haskell.Tools.BackendGHC.GHCUtils (occName, fromSrcText)
+import Language.Haskell.Tools.BackendGHC.GHCUtils (fromSrcText)
 import Language.Haskell.Tools.BackendGHC.Monad
 import Language.Haskell.Tools.BackendGHC.Names
 import Language.Haskell.Tools.BackendGHC.Patterns (trfPattern)
@@ -54,10 +54,11 @@ trfBind' (FunBind { fun_id = id, fun_matches = MG { mg_alts = L _ [L _ (Match { 
                     <*> addEmptyScope (trfWhereLocalBinds (getLoc expr) locals)
 trfBind' (FunBind _ id (MG _ (unLoc -> matches) _) _ _)
   = AST.UFunBind <$> makeNonemptyIndentedList (mapM (trfMatch (unLoc id)) matches)
-trfBind' (PatBind _ pat (GRHSs _ rhs (unLoc -> locals)) _)
-  = AST.USimpleBind <$> trfPattern pat
-                    <*> addEmptyScope (addToScope locals (trfRhss rhs))
-                    <*> addEmptyScope (trfWhereLocalBinds (collectLocs rhs) locals)
+trfBind' (PatBind _ pat (GRHSs _ rhs (unLoc -> locals)) _) = undefined
+  -- = AST.USimpleBind <$> trfPattern pat
+                    -- <*> 
+                --  =   addEmptyScope (addToScope locals (trfRhss rhs))
+                --     <*> addEmptyScope (trfWhereLocalBinds (collectLocs rhs) locals)
 trfBind' (PatSynBind _ _) = convertionProblem "Pattern synonym bindings should be recognized on the declaration level"
 trfBind' b = unhandledElement "binding" b
 
@@ -71,26 +72,26 @@ trfMatch' name (Match _ funid pats (GRHSs _ rhss (unLoc -> locBinds)))
                <*> addToScope pats (addToScope locBinds (trfRhss rhss))
                <*> addToScope pats (trfWhereLocalBinds (collectLocs rhss) locBinds)
 
-trfMatchLhs :: forall n r p . (TransformName n r, n ~ GhcPass p) => IdP n -> HsMatchContext (NameOrRdrName (IdP n)) -> [LPat n] -> Trf (Ann AST.UMatchLhs (Dom r) RangeStage)
-trfMatchLhs name fb pats
-  = do implicitIdLoc <- mkSrcSpan <$> atTheStart <*> atTheStart
-       parenOpLoc <- tokensLoc [AnnOpenP, AnnVal, AnnCloseP]
-       nonFunOpLoc <- tokenLoc AnnVal
-       let infixLoc = case (parenOpLoc, nonFunOpLoc) of
-                        (RealSrcSpan rsp1, RealSrcSpan rsp2)
-                          | srcLocCol (realSrcSpanStart rsp2) == srcLocCol (realSrcSpanStart rsp1) + 1
-                              && srcLocCol (realSrcSpanEnd rsp2) == srcLocCol (realSrcSpanEnd rsp1) - 1 -> parenOpLoc
-                        _ -> nonFunOpLoc -- sometimes parenOpLoc is not an actual operator in parentheses, it just grabs
-                                         -- a paren, so we need to check that it is actually what we seek
-       closeLoc <- srcSpanStart <$> (combineSrcSpans <$> tokenLoc AnnEqual <*> tokenLoc AnnVbar)
-       args <- mapM trfPattern pats
-       let (n, isInfix) = case fb of FunRhs n inf _ -> (n, inf == Infix)
-                                     _ -> let token = if isSymOcc (occName @n name) && isGoodSrcSpan infixLoc then infixLoc else implicitIdLoc
-                                           in (L token name, length pats > 0 && srcSpanStart token >= srcSpanEnd (getLoc (pats !! 0)))
-       annLocNoSema (mkSrcSpan <$> atTheStart <*> (pure closeLoc)) $
-        case (args, isInfix) of
-           (left:right:rest, True) -> AST.UInfixLhs left <$> define (trfOperator @n n) <*> pure right <*> makeList " " (pure closeLoc) (pure rest)
-           _                       -> AST.UNormalLhs <$> define (trfName @n n) <*> makeList " " (pure closeLoc) (pure args)
+-- trfMatchLhs :: forall n r p . (TransformName n r, n ~ GhcPass p) => IdP n -> HsMatchContext (_ (IdP n)) -> [LPat n] -> Trf (Ann AST.UMatchLhs (Dom r) RangeStage)
+trfMatchLhs name fb pats = undefined
+  -- = do implicitIdLoc <- mkSrcSpan <$> atTheStart <*> atTheStart
+  --      parenOpLoc <- tokensLoc [AnnOpenP, AnnVal, AnnCloseP]
+  --      nonFunOpLoc <- tokenLoc AnnVal
+  --      let infixLoc = case (parenOpLoc, nonFunOpLoc) of
+  --                       (RealSrcSpan rsp1, RealSrcSpan rsp2)
+  --                         | srcLocCol (realSrcSpanStart rsp2) == srcLocCol (realSrcSpanStart rsp1) + 1
+  --                             && srcLocCol (realSrcSpanEnd rsp2) == srcLocCol (realSrcSpanEnd rsp1) - 1 -> parenOpLoc
+  --                       _ -> nonFunOpLoc -- sometimes parenOpLoc is not an actual operator in parentheses, it just grabs
+  --                                        -- a paren, so we need to check that it is actually what we seek
+  --      closeLoc <- srcSpanStart <$> (combineSrcSpans <$> tokenLoc AnnEqual <*> tokenLoc AnnVbar)
+  --      args <- undefined -- mapM trfPattern pats
+  --      let (n, isInfix) = case fb of FunRhs n inf _ -> (n, inf == Infix)
+  --                                    _ -> undefined --let token = if isSymOcc (occName @n name) && isGoodSrcSpan infixLoc then infixLoc else implicitIdLoc
+  --                                         --  in (L token name, length pats > 0 && srcSpanStart token >= srcSpanEnd (getLoc (pats !! 0)))
+  --      annLocNoSema (mkSrcSpan <$> atTheStart <*> (pure closeLoc)) $
+  --       case (args, isInfix) of
+  --          (left:right:rest, True) -> undefined --AST.UInfixLhs left <$> define (trfOperator @n n) <*> pure right <*> makeList " " (pure closeLoc) (pure rest)
+          --  _                       -> AST.UNormalLhs <$> define (trfName @n n) <*> makeList " " (pure closeLoc) (pure args)
 
 trfRhss :: (TransformName n r, n ~ GhcPass p) => [Located (GRHS n (LHsExpr n))] -> Trf (Ann AST.URhs (Dom r) RangeStage)
 -- the original location on the GRHS misleadingly contains the local bindings
@@ -107,7 +108,7 @@ trfRhsGuard :: (TransformName n r, n ~ GhcPass p) => Located (Stmt n (LHsExpr n)
 trfRhsGuard = trfLocNoSema trfRhsGuard'
 
 trfRhsGuard' :: (TransformName n r, n ~ GhcPass p) => Stmt n (LHsExpr n) -> Trf (AST.URhsGuard (Dom r) RangeStage)
-trfRhsGuard' (BindStmt _ pat body _ _) = AST.UGuardBind <$> trfPattern pat <*> trfExpr body
+-- trfRhsGuard' (BindStmt _ pat body _ _) = AST.UGuardBind <$> trfPattern pat <*> trfExpr body
 trfRhsGuard' (BodyStmt _ body _ _) = AST.UGuardCheck <$> trfExpr body
 trfRhsGuard' (LetStmt _ (unLoc -> binds)) = AST.UGuardLet <$> trfLocalBinds AnnLet binds
 trfRhsGuard' d = unhandledElement "guard" d

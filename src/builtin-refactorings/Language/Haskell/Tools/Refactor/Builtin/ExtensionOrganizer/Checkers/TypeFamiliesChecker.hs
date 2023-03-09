@@ -62,64 +62,65 @@ chkTypeFamiliesInstBodyDecl' b                             = return b
 
 
 chkOperatorForTypeEq' :: CheckNode Operator
-chkOperatorForTypeEq' op
-  | Just name <- semanticsName (op ^. operatorName)
-  , name == eqTyConName
-  = addRelation (TypeFamilies `lOr` GADTs) op
-  | otherwise = return op
+chkOperatorForTypeEq' op = undefined
+  -- | Just name <- semanticsName (op ^. operatorName)
+  -- -- , name == eqTyConName
+  -- = addRelation (TypeFamilies `lOr` GADTs) op
+  -- | otherwise = return op
 
 -- | Checks whether a given name's has a type equality operator in it.
 -- If the type lookup fails, it returns Nothing. If given a type variable,
 -- it returns False.
 chkQNameForTyEqn :: QualifiedName -> MaybeT ExtMonad Bool
-chkQNameForTyEqn name =
-  if not . isId . semanticsId $ name
-    then return False
-    else do
-      ty <- lookupTypeFromId name
-      let ty'    = GHC.expandTypeSynonyms ty
-          tycons = universeBi ty' :: [GHC.TyCon]
-      if any isEqTyCon tycons then return True
-                              else return False
-      where isEqTyCon tc = tc `hasKey` eqTyConKey
-                        || tc `hasKey` heqTyConKey
-                        || tc `hasKey` eqPrimTyConKey
-                        || tc `hasKey` eqReprPrimTyConKey
-                        || tc `hasKey` eqPhantPrimTyConKey
+chkQNameForTyEqn name = undefined
+  -- if not . isId . semanticsId $ name
+  --   then return False
+  --   else do
+  --     ty <- lookupTypeFromId name
+  --     let ty'    = GHC.expandTypeSynonyms ty
+  --         tycons = universeBi ty' :: [GHC.TyCon]
+  --     if any isEqTyCon tycons then return True
+  --                             else return False
+  --     where isEqTyCon tc = tc `hasKey` eqTyConKey
+  --                       || tc `hasKey` heqTyConKey
+  --                       || tc `hasKey` eqPrimTyConKey
+  --                       || tc `hasKey` eqReprPrimTyConKey
+  --                       || tc `hasKey` eqPhantPrimTyConKey
 
 gblChkQNamesForTypeEq' :: CheckNode Module
-gblChkQNamesForTypeEq' m = do
-  -- Names appearing on the rhs of bindings are just hints,
-  -- they don't necessarily require TypeFamilies.
-  let allNames   = universeBi (m ^. modDecl) :: [QualifiedName]
-      rhs        = universeBi (m ^. modDecl) :: [Rhs]
-      hints      = universeBi rhs            :: [QualifiedName]
+gblChkQNamesForTypeEq' m = undefined
+  --  do
+  -- -- Names appearing on the rhs of bindings are just hints,
+  -- -- they don't necessarily require TypeFamilies.
+  -- let allNames   = universeBi (m ^. modDecl) :: [QualifiedName]
+  --     rhs        = universeBi (m ^. modDecl) :: [Rhs]
+  --     hints      = universeBi rhs            :: [QualifiedName]
 
-      -- Separating hints from evidence,
-      -- and grouping them together based on their GHC.Name
-      evidence  = filter (isJust . semanticsName) (allNames \\ hints)
-      hints'    = filter (isJust . semanticsName) hints
-      groupedEs = equivalenceGroupsBy semanticsName evidence
-      groupedHs = equivalenceGroupsBy semanticsName hints'
+  --     -- Separating hints from evidence,
+  --     -- and grouping them together based on their GHC.Name
+  --     evidence  = filter (isJust . semanticsName) (allNames \\ hints)
+  --     hints'    = filter (isJust . semanticsName) hints
+  --     groupedEs = equivalenceGroupsBy semanticsName evidence
+  --     groupedHs = equivalenceGroupsBy semanticsName hints'
 
-      -- names failed at the semanticsName lookup
-      nmFailedNames = filter (isNothing . semanticsName) allNames
+  --     -- names failed at the semanticsName lookup
+  --     nmFailedNames = undefined -- filter (isNothing . semanticsName) allNames
 
-  -- Checking the representative elements, whether they need FC,
-  -- if they do, add occurences for every node in their group.
-  -- If chkQNameForTyEqn fails, we add MissingInformation.
-  let hasTypeEq    = fromMaybeT False . chkQNameForTyEqn
+  -- -- Checking the representative elements, whether they need FC,
+  -- -- if they do, add occurences for every node in their group.
+  -- -- If chkQNameForTyEqn fails, we add MissingInformation.
+  -- let hasTypeEq    = fromMaybeT False . chkQNameForTyEqn
 
-  es <- filterM (hasTypeEq . fst) groupedEs
-  hs <- filterM (hasTypeEq . fst) groupedHs
-  mapM_ (addRelation     (TypeFamilies `lOr` GADTs)) (concatMap snd es)
-  mapM_ (addRelationHint (TypeFamilies `lOr` GADTs)) (concatMap snd hs)
+  -- es <- filterM (hasTypeEq . fst) groupedEs
+  -- hs <- filterM (hasTypeEq . fst) groupedHs
+  -- mapM_ (addRelation     (TypeFamilies `lOr` GADTs)) (concatMap snd es)
+  -- mapM_ (addRelationHint (TypeFamilies `lOr` GADTs)) (concatMap snd hs)
 
-  mapM_ (addRelationMI (TypeFamilies `lOr` GADTs)) nmFailedNames
+  -- mapM_ (addRelationMI (TypeFamilies `lOr` GADTs)) nmFailedNames
 
-  -- NOTE: this would result in many false positive results
-  -- names failed at the chkQNameForTyEqn (lookupTypeFromId) stage
-  -- idFailedNames <- filterM failedLookup allNames
-  -- mapM_ (addRelationMI (TypeFamilies `lOr` GADTs)) idFailedNames
+  -- -- NOTE: this would result in many false positive results
+  -- -- names failed at the chkQNameForTyEqn (lookupTypeFromId) stage
+  -- -- idFailedNames <- filterM failedLookup allNames
+  -- -- mapM_ (addRelationMI (TypeFamilies `lOr` GADTs)) idFailedNames
 
-  return m
+  -- return m

@@ -49,7 +49,7 @@ library
                      , Language.Haskell.Tools.Refactor.Querying
 
   build-depends:       base                       
-                     , aeson                     >= 1.0  && < 1.5
+                     , aeson                     
                      , mtl                       >= 2.2  && < 2.3
                      , uniplate                  >= 1.6  && < 1.7
                      , ghc-paths                 >= 0.1  && < 0.2

@@ -21,8 +21,9 @@ tryItOut = tryRefactor (localRefactoring . dollarApp)
 type DollarMonad = StateT [SrcSpan] LocalRefactor
 
 dollarApp :: RealSrcSpan -> LocalRefactoring
-dollarApp sp = flip evalStateT [] . ((nodesContained sp !~ (\e -> get >>= replaceExpr e))
-                                        >=> (biplateRef !~ parenExpr))
+dollarApp sp = undefined
+--  flip evalStateT [] . ((nodesContained sp !~ (\e -> get >>= replaceExpr e))
+--                                         >=> (biplateRef !~ parenExpr))
 
 replaceExpr :: Expr -> [SrcSpan] -> DollarMonad Expr
 replaceExpr (App fun (Paren arg)) _ = do modify $ (getRange arg :)

@@ -6,9 +6,9 @@ import Control.Monad.Reader (asks)
 
 import ApiAnnotation as GHC (AnnKeywordId(..))
 import FastString as GHC (unpackFS)
-import HsExpr as GHC (HsSplice(..), HsExpr(..), HsBracket(..))
+import GHC.Hs.Expr as GHC (HsSplice(..), HsExpr(..), HsBracket(..))
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Language.Haskell.Tools.BackendGHC.Decls (trfDecls, trfDeclsGroup)
 import Language.Haskell.Tools.BackendGHC.Exprs (trfExpr, createScopeInfo)
@@ -66,7 +66,7 @@ trfBracket' (TExpBr _ expr) = AST.UExprBracket <$> trfExpr expr
 trfBracket' (VarBr _ isSingle expr)
   = AST.UExprBracket <$> annLoc createScopeInfo (updateStart (updateCol (if isSingle then (+1) else (+2))) <$> asks contRange)
       (AST.UVar <$> (annContNoSema (trfName' @n expr)))
-trfBracket' (PatBr _ pat) = AST.UPatternBracket <$> trfPattern pat
+-- trfBracket' (PatBr _ pat) = AST.UPatternBracket <$> trfPattern pat
 trfBracket' (DecBrL _ decls) = AST.UDeclsBracket <$> trfDecls decls
 trfBracket' (DecBrG _ decls) = AST.UDeclsBracket <$> trfDeclsGroup decls
 trfBracket' (TypBr _ typ) = AST.UTypeBracket <$> trfType typ

@@ -89,7 +89,7 @@ instance HasRange (OptionalInfo RngTemplateStage) where
   getRange = RealSrcSpan . (^. rngTemplateOptRange)
   setRange (RealSrcSpan sp) = rngTemplateOptRange .= sp
   setRange _ = id
-
+   
 instance Show (SpanInfo RngTemplateStage) where
   show rngNode = concatMap show $ rngNode ^. rngTemplateNodeElems
 instance Show (ListInfo RngTemplateStage) where

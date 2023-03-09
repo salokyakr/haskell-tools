@@ -4,10 +4,6 @@
 packages:
     -- core packages
     src/ast
-    src/ast-ghc
-    src/ast-trf
-    src/ast-gen
-    src/ast-ppr
     src/refactor
     -- add-on packages
     demo

@@ -10,10 +10,10 @@ import Language.Haskell.Tools.Refactor
 import Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.ExtMonad
 
 chkOverloadedStringsLiteral :: CheckNode Literal
-chkOverloadedStringsLiteral = conditional chkLit OverloadedStrings
-  where chkLit :: CheckNode Literal
-        chkLit lit
-          | UStringLit _ <- lit ^. element
-          , not . GHC.eqType GHC.stringTy $ semanticsLiteralType lit
-          = addEvidence OverloadedStrings lit
-          | otherwise = return lit
+chkOverloadedStringsLiteral = undefined -- conditional chkLit OverloadedStrings
+  -- where chkLit :: CheckNode Literal
+  --       chkLit lit
+  --         | UStringLit _ <- lit ^. element
+  --         , not . GHC.eqType GHC.stringTy $ semanticsLiteralType lit
+  --         = addEvidence OverloadedStrings lit
+  --         | otherwise = return lit

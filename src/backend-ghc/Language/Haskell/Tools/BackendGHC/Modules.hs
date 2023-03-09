@@ -43,13 +43,14 @@ trfModule mod hsMod = do
   -- createModuleInfo involves reading the ghc compiler state, so it must be evaluated
   -- or large parts of the representation will be kept
   !modInfo <- createModuleInfo mod (maybe noSrcSpan getLoc $ hsmodName $ unLoc hsMod) (hsmodImports $ unLoc hsMod)
-  trfLocCorrect (pure modInfo)
-     (\sr -> combineSrcSpans sr <$> (uniqueTokenAnywhere AnnEofPos))
-     (\(HsModule name exports imports decls deprec _) ->
-        AST.UModule <$> trfFilePragmas
-                    <*> trfModuleHead name (srcSpanStart (foldLocs (map getLoc imports ++ map getLoc decls))) exports deprec
-                    <*> trfImports imports
-                    <*> trfDecls decls) $ hsMod
+  undefined
+  -- trfLocCorrect (pure modInfo)
+  --    (\sr -> combineSrcSpans sr <$> (uniqueTokenAnywhere AnnEofPos))
+  --    (\(HsModule name exports imports decls deprec _) ->
+  --       AST.UModule <$> trfFilePragmas
+  --                   <*> trfModuleHead name (srcSpanStart (foldLocs (map getLoc imports ++ map getLoc decls))) exports deprec
+  --                   <*> trfImports imports
+  --                   <*> trfDecls decls) $ hsMod
 
 -- | Transformes the module in its typed state. Uses the results of 'trfModule' to extract program
 -- elements (splices for example) that are not kept in the typed representation.
@@ -61,9 +62,9 @@ trfModuleRename mod rangeMod (gr,imports,exps,_) hsMod
     = do -- createModuleInfo involves reading the ghc compiler state, so it must be evaluated
          -- or large parts of the representation will be kept
          !info <- createModuleInfo mod (maybe noSrcSpan getLoc $ hsmodName $ unLoc hsMod) imports
-         trfLocCorrect (pure info) (\sr -> combineSrcSpans sr <$> (uniqueTokenAnywhere AnnEofPos)) (trfModuleRename' (info ^. implicitNames)) hsMod
+         undefined -- trfLocCorrect (pure info) (\sr -> combineSrcSpans sr <$> (uniqueTokenAnywhere AnnEofPos)) (trfModuleRename' (info ^. implicitNames)) hsMod
   where roleAnnots = rangeMod ^? AST.modDecl&AST.annList&filtered ((\case Ann _ (AST.URoleDecl {}) -> True; _ -> False))
-        originalNames = Map.fromList $ mapMaybe getSourceAndInfo (rangeMod ^? biplateRef)
+        originalNames = undefined -- Map.fromList $ mapMaybe getSourceAndInfo (rangeMod ^? biplateRef)
         getSourceAndInfo :: Ann AST.UQualifiedName (Dom GhcPs) RangeStage -> Maybe (SrcSpan, RdrName)
         getSourceAndInfo n = (,) <$> (n ^? annotation&sourceInfo&nodeSpan) <*> (n ^? semantics&nameInfo)
 
@@ -170,26 +171,26 @@ trfImports (filter (not . ideclImplicit . unLoc) -> imps)
                                                   <*> (srcLocSpan . srcSpanEnd <$> tokenLoc AnnWhere))
 
 trfImport :: TransformName n r => LImportDecl n -> Trf (Ann AST.UImportDecl (Dom r) RangeStage)
-trfImport (L l (GHC.ImportDecl _ _ name pkg isSrc _ isQual _ declAs declHiding)) = focusOn l $
-  do safeTok <- tokenLoc AnnSafe
-     let -- default positions of optional parts of an import declaration
-         annBeforeQual = if isSrc then AnnClose else AnnImport
-         annBeforeSafe = if isQual then AnnQualified else annBeforeQual
-         annBeforePkg = if isGoodSrcSpan safeTok then AnnSafe else annBeforeSafe
-     -- the import semantic infos will be generated after all imports are processed,
-     -- otherwise information on instances imported will be inconsistent
-     annLoc (pure (error "Import's semantic data not initialized")) (pure l) $ AST.UImportDecl
-       <$> (if isSrc then makeJust <$> annLocNoSema (tokensLoc [AnnOpen, AnnClose]) (pure AST.UImportSource)
-                     else nothing " " "" (after AnnImport))
-       <*> (if isQual then makeJust <$> (annLocNoSema (tokenLoc AnnQualified) (pure AST.UImportQualified))
-                      else nothing " " "" (after annBeforeQual))
-       <*> (if isGoodSrcSpan safeTok then makeJust <$> (annLocNoSema (pure safeTok) (pure AST.UImportSafe))
-                                     else nothing " " "" (after annBeforeSafe))
-       <*> maybe (nothing " " "" (after annBeforePkg))
-                 (\str -> makeJust <$> (annLocNoSema (tokenLoc AnnPackageName) (pure (AST.UStringNode (unpackFS $ sl_fs str))))) pkg
-       <*> trfModuleName name
-       <*> maybe (nothing " " "" (pure $ srcSpanEnd (getLoc name))) (\mn -> makeJust <$> (trfRenaming mn)) declAs
-       <*> trfImportSpecs declHiding
+trfImport (L l (GHC.ImportDecl _ _ name pkg isSrc _ isQual _ declAs declHiding)) = undefined -- focusOn l $
+  -- do safeTok <- tokenLoc AnnSafe
+  --    let -- default positions of optional parts of an import declaration
+  --        annBeforeQual = if isSrc then AnnClose else AnnImport
+  --        annBeforeSafe = undefined -- if isQual then AnnQualified else annBeforeQual
+  --        annBeforePkg = if isGoodSrcSpan safeTok then AnnSafe else annBeforeSafe
+  --    -- the import semantic infos will be generated after all imports are processed,
+  --    -- otherwise information on instances imported will be inconsistent
+  --    annLoc (pure (error "Import's semantic data not initialized")) (pure l) $ AST.UImportDecl
+  --      <$> (if isSrc then makeJust <$> annLocNoSema (tokensLoc [AnnOpen, AnnClose]) (pure AST.UImportSource)
+  --                    else nothing " " "" (after AnnImport))
+  --     --  <*> (if isQual then makeJust <$> (annLocNoSema (tokenLoc AnnQualified) (pure AST.UImportQualified))
+  --     --                 else nothing " " "" (after annBeforeQual))
+  --      <*> (if isGoodSrcSpan safeTok then makeJust <$> (annLocNoSema (pure safeTok) (pure AST.UImportSafe))
+  --                                    else nothing " " "" (after annBeforeSafe))
+  --      <*> maybe (nothing " " "" (after annBeforePkg))
+  --                (\str -> makeJust <$> (annLocNoSema (tokenLoc AnnPackageName) (pure (AST.UStringNode (unpackFS $ sl_fs str))))) pkg
+  --      <*> trfModuleName name
+  --      <*> maybe (nothing " " "" (pure $ srcSpanEnd (getLoc name))) (\mn -> makeJust <$> (trfRenaming mn)) declAs
+      --  <*> trfImportSpecs declHiding
   where trfRenaming mn = annLocNoSema (combineSrcSpans (getLoc mn) <$> tokenLoc AnnAs)
                                       (AST.UImportRenaming <$> (trfModuleName mn))
 

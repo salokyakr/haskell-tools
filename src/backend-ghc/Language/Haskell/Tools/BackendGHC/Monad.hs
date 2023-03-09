@@ -147,9 +147,7 @@ rdrSplice spl = do
                    -- group up locals by name
                    $ map (foldl1 (\e1 e2 -> ((^. _1) e1, (^. _2) e1 `mappend` (^. _2) e2, (^. _3) e1 <|> (^. _3) e2)))
                    $ groupBy ((==) `on` (^. _1)) $ sortBy (compare `on` (^. _1)) locals
-    tcSpl <- liftIO $ runTcInteractive (env { hsc_dflags = xopt_set (hsc_dflags env) TemplateHaskellQuotes })
-      $ updGblEnv (\gbl -> gbl { tcg_rdr_env = readEnv })
-      $ tcHsSplice' spl
+    tcSpl <- undefined
     let typecheckErrors = showSDocUnsafe (vcat (pprErrMsgBagWithLoc (fst (fst tcSpl)))
                                             <+> vcat (pprErrMsgBagWithLoc (snd (fst tcSpl))))
     -- This function refers the ghc environment, we must evaluate the result or the reference

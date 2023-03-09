@@ -6,7 +6,7 @@ import qualified Data.ByteString.Char8 as BS (foldr)
 
 import BasicTypes as GHC (FractionalLit(..), IntegralLit(..))
 import FastString as GHC (unpackFS)
-import HsLit as GHC (OverLitVal(..), HsLit(..))
+import GHC.Hs.Lit as GHC (OverLitVal(..), HsLit(..))
 import Type as GHC
 import TysWiredIn as GHC
 import TysPrim as GHC

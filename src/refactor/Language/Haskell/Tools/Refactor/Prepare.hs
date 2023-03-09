@@ -223,7 +223,7 @@ codeGenDfs dfs = dfs { hscTarget = HscInterpreted, ghcLink = LinkInMemory }
 -- | Forces ASM code generation for a given module
 forceAsmGen :: ModSummary -> ModSummary
 forceAsmGen ms = ms { ms_hspp_opts = modOpts' }
-  where modOpts = (ms_hspp_opts ms) { hscTarget = defaultObjectTarget (targetPlatform (ms_hspp_opts ms)) }
+  where modOpts = undefined --(ms_hspp_opts ms) { hscTarget = defaultObjectTarget (targetPlatform (ms_hspp_opts ms)) }
         modOpts' = modOpts { ghcLink = LinkInMemory }
 
 -- | Normalizes the flags for a module summary

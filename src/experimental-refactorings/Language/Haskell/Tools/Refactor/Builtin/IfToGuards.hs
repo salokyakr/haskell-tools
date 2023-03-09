@@ -13,7 +13,7 @@ tryItOut :: String -> String -> IO ()
 tryItOut = tryRefactor (localRefactoring . ifToGuards)
 
 ifToGuards :: RealSrcSpan -> LocalRefactoring
-ifToGuards sp = return . (nodesContaining sp .- changeBindings)
+ifToGuards sp = undefined --return . (nodesContaining sp .- changeBindings)
 
 changeBindings :: ValueBind -> ValueBind
 changeBindings (SimpleBind (VarPat name) (UnguardedRhs (If pred thenE elseE)) locals)

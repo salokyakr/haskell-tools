@@ -32,3 +32,9 @@ library
                      , ghc                
                      , haskell-tools-ast >= 1.1  && < 1.2
   default-language: Haskell2010
+
+executable some-executable
+  build-depends:       base, haskell-tools-prettyprint
+  hs-source-dirs:      exe
+  main-is:             Main.hs
+  default-language:    Haskell2010

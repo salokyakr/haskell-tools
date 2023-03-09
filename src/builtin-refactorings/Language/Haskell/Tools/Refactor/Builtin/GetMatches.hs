@@ -16,13 +16,13 @@ getMatchesQuery :: QueryChoice
 getMatchesQuery = LocationQuery "GetMatches" getMatches
 
 getMatches :: RealSrcSpan -> ModuleDom -> [ModuleDom] -> QueryMonad QueryValue
-getMatches sp (_,mod) _
-  = case selectedName of [n] -> fmap (GeneralQuery . toJSON) . getCtors . idType . semanticsId $ n
-                         []  -> queryError "No name is selected."
-                         _   -> queryError "Multiple names are selected."
-  where
-    selectedName :: [QualifiedName]
-    selectedName = mod ^? nodesContaining sp
+getMatches sp (_,mod) _ = undefined
+  -- = case selectedName of [n] -> fmap (GeneralQuery . toJSON) . getCtors . idType . semanticsId $ n
+  --                        []  -> queryError "No name is selected."
+  --                        _   -> queryError "Multiple names are selected."
+  -- where
+  --   selectedName :: [QualifiedName]
+  --   selectedName = mod ^? nodesContaining sp
 
 getCtors :: GHC.Type -> QueryMonad [(String, [String])]
 -- | TODO: unpack forall, context types

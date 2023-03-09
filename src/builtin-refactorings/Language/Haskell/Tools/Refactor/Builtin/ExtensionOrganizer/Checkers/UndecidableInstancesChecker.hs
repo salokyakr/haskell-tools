@@ -28,9 +28,9 @@ gblChkUndecidableInstances = conditional gblChkUndecidableInstances' Undecidable
 -- UndecidableInstances in the module.
 gblChkUndecidableInstances' :: CheckNode Module
 gblChkUndecidableInstances' m = do
-  (clsInsts, famInsts) <- getInstances [semanticsModule m]
-  mapM_ chkClsInst clsInsts
-  mapM_ chkFamInst famInsts
+  -- (clsInsts, famInsts) <- getInstances [semanticsModule m]
+  -- mapM_ chkClsInst clsInsts
+  -- mapM_ chkFamInst famInsts
   return m
 
 -- | If the type class instance requires UndecidableInstances,
@@ -78,13 +78,13 @@ chkUndecidableInstancesDecl' d = do
 -- May fail on lookup.
 chkUndecidableInstancesDeclMaybe :: Decl -> MaybeT ExtMonad Decl
 chkUndecidableInstancesDeclMaybe d@(ClassDecl mCtx _ _ _)
-  | isJust (mCtx ^. annMaybe) = do
-    ctx <- liftMaybe $ mCtx ^. annMaybe
-    let assert = ctx ^. contextAssertion
-        names  = assertionQNames assert
-    types <- mapM lookupTypeFromId names
-    if any hasTyFunHead types then addEvidence UndecidableInstances d
-                              else return d
+  -- | isJust (mCtx ^. annMaybe) = do
+  --   ctx <- liftMaybe $ mCtx ^. annMaybe
+  --   let assert = ctx ^. contextAssertion
+  --       names  = assertionQNames assert
+  --   types <- mapM lookupTypeFromId names
+  --   if any hasTyFunHead types then addEvidence UndecidableInstances d
+  --                             else return d
   | otherwise = return d
 chkUndecidableInstancesDeclMaybe d@(ClosedTypeFamily dh _ _) = do
   tyFam <- lookupClosedTyFam dh

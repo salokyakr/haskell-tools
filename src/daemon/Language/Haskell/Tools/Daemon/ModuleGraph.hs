@@ -47,8 +47,8 @@ moduleGraphNodes drop_hs_boot_nodes summaries =
             | (s, key) <- numbered_summaries
              -- Drop the hi-boot ones if told to do so
             , not (isBootSummary s && drop_hs_boot_nodes)
-            , let out_keys = out_edge_keys hs_boot_key (map unLoc (ms_home_srcimps s)) ++
-                             out_edge_keys HsSrcFile   (map unLoc (ms_home_imps s)) ++
+            , let out_keys = out_edge_keys hs_boot_key (map unLoc (GHC.ms_home_srcimps s)) ++
+                             out_edge_keys HsSrcFile   (map unLoc (GHC.ms_home_imps s)) ++
                              (-- see [boot-edges] below
                               if drop_hs_boot_nodes || ms_hsc_src s == HsBootFile
                               then []
@@ -89,10 +89,10 @@ summaryNodeKey :: SummaryNode -> Int
 summaryNodeKey = node_key
 
 ms_home_imps :: ModSummary -> [Located ModuleName]
-ms_home_imps = home_imps . ms_imps
+ms_home_imps = GHC.home_imps . ms_imps
 
 ms_home_srcimps :: ModSummary -> [Located ModuleName]
-ms_home_srcimps = home_imps . ms_srcimps
+ms_home_srcimps = GHC.home_imps . ms_srcimps
 
 home_imps :: [(Maybe FastString, Located ModuleName)] -> [Located ModuleName]
 home_imps imps = [ lmodname |  (mb_pkg, lmodname) <- imps,

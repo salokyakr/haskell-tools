@@ -35,11 +35,12 @@ autoCorrect sp mod
 --------------------------------------------------------------------------------------------
 
 reOrder :: RealSrcSpan -> HT.Module -> LocalRefactor (Maybe HT.Module)
-reOrder sp mod = do let accessibleMods = semanticsModule mod : semanticsPrelTransMods mod ++ concatMap semanticsTransMods (mod ^? modImports & annList :: [HT.ImportDecl])
-                        rng:_ = map getRange (mod ^? nodesContained sp :: [Expr])
-                    insts <- liftGhc $ fst <$> getInstances accessibleMods
-                    (res,done) <- liftGhc $ flip runStateT False ((nodesContained sp & filtered ((==rng) . getRange) !~ reOrderExpr insts) mod)
-                    return (if done then Just res else Nothing)
+reOrder sp mod = undefined
+  --  do let accessibleMods = undefined -- semanticsModule mod : semanticsPrelTransMods mod ++ concatMap semanticsTransMods (mod ^? modImports & annList :: [HT.ImportDecl])
+  --                       rng:_ = umap getRange (mod ^? nodesContained sp :: [Expr])
+  --                   insts <- liftGhc $ fst <$> getInstances accessibleMods
+  --                   (res,done) <- liftGhc $ flip runStateT False ((nodesContained sp & filtered ((==rng) . getRange) !~ reOrderExpr insts) mod)
+  --                   return (if done then Just res else Nothing)
 
 reOrderExpr :: [ClsInst] -> Expr -> StateT Bool Ghc Expr
 reOrderExpr insts e@(App (App f a1) a2)
@@ -51,7 +52,7 @@ reOrderExpr insts e@(App (App f a1) a2)
           then put True >> return (exprArg .= a1 $ exprFun&exprArg .= a2 $ e)
           else return e
 reOrderExpr insts e@(InfixApp lhs op rhs)
-  = do let funTy = idType $ semanticsId (op ^. operatorName)
+  = do let funTy = undefined -- idType $ semanticsId (op ^. operatorName)
        lhsTy <- lift $ typeExpr lhs
        rhsTy <- lift $ typeExpr rhs
        -- liftIO $ putStrLn $ (show $ isJust $ appTypeMatches insts funTy [lhsTy, rhsTy]) ++ " " ++ (show $ isJust $ appTypeMatches insts funTy [lhsTy, rhsTy]) ++ " " ++ (showSDocUnsafe $ ppr $ funTy) ++ " " ++ (showSDocUnsafe $ ppr $ lhsTy) ++ " " ++ (showSDocUnsafe $ ppr $ rhsTy)
@@ -63,11 +64,12 @@ reOrderExpr _ e = return e
 ------------------------------------------------------------------------------------------
 
 reParen :: RealSrcSpan -> HT.Module -> LocalRefactor (Maybe HT.Module)
-reParen sp mod = do let accessibleMods = semanticsModule mod : semanticsPrelTransMods mod ++ concatMap semanticsTransMods (mod ^? modImports & annList :: [HT.ImportDecl])
-                        rng:_ = map getRange (mod ^? nodesContained sp :: [Expr])
-                    insts <- liftGhc $ fst <$> getInstances accessibleMods
-                    (res,done) <- liftGhc $ flip runStateT False ((nodesContained sp & filtered ((==rng) . getRange) !~ reParenExpr insts) mod)
-                    return (if done then Just res else Nothing)
+reParen sp mod = undefined
+  -- do let accessibleMods = undefined -- semanticsModule mod : semanticsPrelTransMods mod ++ concatMap semanticsTransMods (mod ^? modImports & annList :: [HT.ImportDecl])
+  --                       rng:_ = undefined -- map getRange (mod ^? nodesContained sp :: [Expr])
+  --                   insts <- liftGhc $ fst <$> getInstances accessibleMods
+  --                   (res,done) <- liftGhc $ flip runStateT False ((nodesContained sp & filtered ((==rng) . getRange) !~ reParenExpr insts) mod)
+  --                   return (if done then Just res else Nothing)
 
 reParenExpr :: [ClsInst] -> Expr -> StateT Bool Ghc Expr
 reParenExpr insts e = do atoms <- lift $ extractAtoms e
@@ -89,11 +91,12 @@ prettyPrintAtom (LiteralA l) = prettyPrint l
 type Build = Either Atom Expr
 
 extractAtoms :: Expr -> Ghc [(GHC.Type, Atom)]
-extractAtoms e = do lits <- mapM (\l -> (, LiteralA l) <$> literalType l) (e ^? biplateRef)
-                    return $ sortOn (srcSpanStart . atomRange . snd)
-                           $ map (\n -> (idType $ semanticsId (n ^. simpleName), NameA n)) (e ^? biplateRef)
-                               ++ map (\o -> (idType $ semanticsId (o ^. operatorName), OperatorA o)) (e ^? biplateRef)
-                               ++ lits
+extractAtoms e = do lits <- undefined -- mapM (\l -> (, LiteralA l) <$> literalType l) (e ^? biplateRef)
+                    undefined
+                    -- return $ sortOn (srcSpanStart . atomRange . snd)
+                    --        $ map (\n -> (idType $ semanticsId (n ^. simpleName), NameA n)) (e ^? biplateRef)
+                    --            ++ map (\o -> (idType $ semanticsId (o ^. operatorName), OperatorA o)) (e ^? biplateRef)
+                    --            ++ lits
 
 atomRange :: Atom -> SrcSpan
 atomRange (NameA n) = getRange n

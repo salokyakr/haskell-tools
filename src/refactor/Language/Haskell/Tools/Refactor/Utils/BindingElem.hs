@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE MonoLocalBinds, LiberalTypeSynonyms #-}
 
 -- | Utilities for transformations that work on both top-level and local definitions
 module Language.Haskell.Tools.Refactor.Utils.BindingElem where

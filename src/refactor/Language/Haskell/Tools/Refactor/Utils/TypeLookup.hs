@@ -104,7 +104,7 @@ isNewtype t = do
 lookupType :: GhcMonad m => AST.Type -> MaybeT m GHC.TyThing
 lookupType t = do
   name  <- liftMaybe . nameFromType $ t
-  sname <- liftMaybe . semanticsName   $ name
+  sname <- undefined --liftMaybe . semanticsName   $ name
   MaybeT . GHC.lookupName $ sname
 
 -- | Looks up a GHC.Class from something that has a type class constructor in it
@@ -129,11 +129,11 @@ lookupClassFromDeclHead = lookupClassWith (liftMaybe . declHeadSemName)
 -- | Looks up the right-hand side (GHC representation)
 -- of a Haskell Tools Type corresponding to a type synonym
 semanticsTypeSynRhs :: GhcMonad m => AST.Type -> MaybeT m GHC.Type
-semanticsTypeSynRhs ty = (liftMaybe . nameFromType $ ty) >>= lookupTypeSynRhs
+semanticsTypeSynRhs ty = undefined -- (liftMaybe . nameFromType $ ty) >>= lookupTypeSynRhs
 
 -- | Converts a global Haskell Tools type to a GHC type
 semanticsType :: GhcMonad m => AST.Type -> MaybeT m GHC.Type
-semanticsType ty = (liftMaybe . nameFromType $ ty) >>= lookupTypeFromGlobalName
+semanticsType ty = undefined --(liftMaybe . nameFromType $ ty) >>= lookupTypeFromGlobalName
 
 isNewtypeTyCon :: GHC.TyThing -> Bool
 isNewtypeTyCon (GHC.ATyCon tycon) = GHC.isNewTyCon tycon
@@ -190,7 +190,7 @@ hasTyVarHead ParArrayType{} = False
 hasTyVarHead (TypeApp f _) = hasTyVarHead f
 hasTyVarHead InfixTypeApp{} = False
 hasTyVarHead (ParenType t) = hasTyVarHead t
-hasTyVarHead (VarType n) = maybe False GHC.isTyVarName (semanticsName n)
+-- hasTyVarHead (VarType n) = maybe False GHC.isTyVarName (semanticsName n)
 hasTyVarHead (KindedType t _) = hasTyVarHead t
 hasTyVarHead (BangType t) = hasTyVarHead t
 hasTyVarHead (LazyType t) = hasTyVarHead t

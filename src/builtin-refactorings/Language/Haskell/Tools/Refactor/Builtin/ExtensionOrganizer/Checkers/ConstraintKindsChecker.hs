@@ -16,17 +16,17 @@ chkConstraintKindsDecl :: CheckNode Decl
 chkConstraintKindsDecl = conditional chkConstraintKindsDecl' ConstraintKinds
 
 chkConstraintKindsDecl' :: CheckNode Decl
-chkConstraintKindsDecl' d@(TypeDecl dh rhs)
-  -- Has any constraints of form (x t1 t2)
-  | ctxts <- universeBi rhs :: [Context]
-  , any hasTyVarHeadAsserts ctxts
-  = addEvidence ConstraintKinds d
-  -- Right-hand side has kind Constraint
-  | otherwise = do
-  let ty = typeOrKindFromId . declHeadQName $ dh
-  if hasConstraintKind ty || tcReturnsConstraintKind ty
-     then addEvidence ConstraintKinds d
-     else return d
+-- chkConstraintKindsDecl' d@(TypeDecl dh rhs)
+--   -- Has any constraints of form (x t1 t2)
+--   | ctxts <- universeBi rhs :: [Context]
+--   , any hasTyVarHeadAsserts ctxts
+--   = addEvidence ConstraintKinds d
+--   -- Right-hand side has kind Constraint
+  -- | otherwise = do
+  -- let ty = typeOrKindFromId . declHeadQName $ dh
+  -- if hasConstraintKind ty || tcReturnsConstraintKind ty
+  --    then addEvidence ConstraintKinds d
+  --    else return d
 chkConstraintKindsDecl' d = return d
 
 hasTyVarHeadAsserts :: Context -> Bool
@@ -34,7 +34,7 @@ hasTyVarHeadAsserts = hasAnyTyVarHeads . (^. contextAssertion)
 
 hasAnyTyVarHeads :: Assertion -> Bool
 hasAnyTyVarHeads (ClassAssert n _)
-  | Just n' <- semanticsName n = isTyVarName n'
+  -- | Just n' <- semanticsName n = isTyVarName n'
   | otherwise               = False
 hasAnyTyVarHeads ta@TupleAssert{}
   | Just assertions <- ta ^? innerAsserts & annListElems

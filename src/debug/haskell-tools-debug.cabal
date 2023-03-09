@@ -28,7 +28,7 @@ library
                      , haskell-tools-backend-ghc
                      , haskell-tools-refactor    >= 1.1 && < 1.2
                      , haskell-tools-prettyprint >= 1.1 && < 1.2
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
+                     , haskell-tools-builtin-refactorings
                      , uniplate                  >= 1.6 && < 1.7
                      , classyplate               >= 0.3 && < 0.4
                      , criterion                 >= 1.1 && < 1.6

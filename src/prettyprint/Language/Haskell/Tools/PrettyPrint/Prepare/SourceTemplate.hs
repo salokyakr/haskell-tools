@@ -13,7 +13,7 @@ import Control.Reference
 import Data.Data
 import Language.Haskell.Tools.AST
 import SrcLoc
-
+   
 instance SourceInfo SrcTemplateStage where
   data SpanInfo SrcTemplateStage
          = SourceTemplateNode { _sourceTemplateNodeRange :: SrcSpan -- ^ The (original) range of the given element

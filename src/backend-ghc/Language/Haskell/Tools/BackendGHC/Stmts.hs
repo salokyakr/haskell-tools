@@ -9,10 +9,10 @@ module Language.Haskell.Tools.BackendGHC.Stmts where
 import Control.Monad.Reader (MonadReader(..))
 
 import ApiAnnotation as GHC (AnnKeywordId(..))
-import HsExpr as GHC
+import GHC.Hs.Expr as GHC
 import Outputable (Outputable)
 import SrcLoc as GHC
-import HsExtension (GhcPass)
+import GHC.Hs.Extension (GhcPass)
 
 import Language.Haskell.Tools.AST (Ann, AnnListG, Dom, RangeStage)
 import qualified Language.Haskell.Tools.AST as AST
@@ -33,12 +33,12 @@ trfDoStmt' = gTrfDoStmt' trfExpr
 
 gTrfDoStmt' :: (TransformName n r, Data (ge n), Outputable (ge n), n ~ GhcPass p, Data (Stmt n (Located (ge n))))
             => (Located (ge n) -> Trf (Ann ae (Dom r) RangeStage)) -> Stmt n (Located (ge n)) -> Trf (AST.UStmt' ae (Dom r) RangeStage)
-gTrfDoStmt' et (BindStmt _ pat expr _ _) = AST.UBindStmt <$> trfPattern pat <*> et expr
+-- gTrfDoStmt' et (BindStmt _ pat expr _ _) = AST.UBindStmt <$> trfPattern pat <*> et expr
 gTrfDoStmt' et (BodyStmt _ expr _ _) = AST.UExprStmt <$> et expr
 gTrfDoStmt' _ (LetStmt _ (unLoc -> binds)) = AST.ULetStmt . orderAnnList <$> addToScope binds (trfLocalBinds AnnLet binds)
 gTrfDoStmt' et (LastStmt _ body _ _) = AST.UExprStmt <$> et body
 gTrfDoStmt' et (RecStmt { recS_stmts = stmts }) = AST.URecStmt <$> trfAnnList "," (gTrfDoStmt' et) stmts
-gTrfDoStmt' _ stmt = unhandledElement "simple statement" stmt
+-- gTrfDoStmt' _ stmt = unhandledElement "simple statement" stmt
 
 trfListCompStmts :: (TransformName n r, n ~ GhcPass p) => [Located (Stmt n (LHsExpr n))] -> Trf (AnnListG AST.UListCompBody (Dom r) RangeStage)
 trfListCompStmts [unLoc -> ParStmt _ blocks _ _, unLoc -> (LastStmt {})]

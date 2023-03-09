@@ -27,7 +27,7 @@ instance HasNameInfo' InstanceHead where
 
 
 opSemName :: Operator -> Maybe GHC.Name
-opSemName = semanticsName . (^. operatorName)
+opSemName x = Nothing --semanticsName . (^. operatorName)
 
 declHeadQName :: DeclHead -> QualifiedName
 declHeadQName (NameDeclHead n)       = n ^. simpleName
@@ -36,13 +36,13 @@ declHeadQName (DeclHeadApp dh _)     = declHeadQName dh
 declHeadQName (InfixDeclHead _ op _) = op ^. operatorName
 
 declHeadSemName :: DeclHead -> Maybe GHC.Name
-declHeadSemName (NameDeclHead n)       = semanticsName n
+-- declHeadSemName (NameDeclHead n)       = semanticsName n
 declHeadSemName (ParenDeclHead dh)     = declHeadSemName dh
 declHeadSemName (DeclHeadApp dh _)     = declHeadSemName dh
 declHeadSemName (InfixDeclHead _ op _) = opSemName op
 
 instHeadSemName :: InstanceHead -> Maybe GHC.Name
-instHeadSemName (InstanceHead n)         = semanticsName n
+-- instHeadSemName (InstanceHead n)         = semanticsName n
 instHeadSemName (InfixInstanceHead _ op) = opSemName op
 instHeadSemName (ParenInstanceHead ih)   = instHeadSemName ih
 instHeadSemName (AppInstanceHead ih _)   = instHeadSemName ih
@@ -57,9 +57,9 @@ assertionQNames _                    = []
 
 -- | Collects the semantic names of the class heads in an assertion.
 assertionSemNames :: Assertion -> [GHC.Name]
-assertionSemNames (ClassAssert n _)    = maybeToList . semanticsName $ n
+-- assertionSemNames (ClassAssert n _)    = maybeToList . semanticsName $ n
 assertionSemNames (InfixAssert _ op _) = maybeToList . opSemName $ op
-assertionSemNames (ImplicitAssert n _) = maybeToList . semanticsName $ n
+-- assertionSemNames (ImplicitAssert n _) = maybeToList . semanticsName $ n
 assertionSemNames (TupleAssert xs)     = concatMap assertionSemNames xs
 assertionSemNames _ = []
 

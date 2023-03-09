@@ -17,15 +17,15 @@ gblChkCPP = conditional gblChkCPP' Cpp
 -- TODO (after GHC upgrade): Rewrite this with mgLookupModule
 gblChkCPP' :: CheckNode Module
 gblChkCPP' m = do
-  ms <- getModSummary . moduleName . semanticsModule $ m
-  let cppSrc = preprocessedSrc ms
-  case ml_hs_file . ms_location $ ms of
-    Just fp -> do
-      let lines'  = lines8 . fromString
-          cppSrc' = lines' . rmDefaultIncludes fp $ cppSrc
-          origSrc = lines' . prettyPrint $ m
-      when (cppSrc' /= origSrc) (addEvidenceLoc Cpp noSrcSpan)
-    _ -> addEvidenceLoc Cpp noSrcSpan
+  -- ms <- getModSummary . moduleName . semanticsModule $ m
+  -- let cppSrc = preprocessedSrc ms
+  -- case ml_hs_file . ms_location $ ms of
+  --   Just fp -> do
+  --     let lines'  = lines8 . fromString
+  --         cppSrc' = lines' . rmDefaultIncludes fp $ cppSrc
+  --         origSrc = lines' . prettyPrint $ m
+  --     when (cppSrc' /= origSrc) (addEvidenceLoc Cpp noSrcSpan)
+  --   _ -> addEvidenceLoc Cpp noSrcSpan
   return m
 
 -- CPP inserts a line before and after the default includes,

@@ -1,6 +1,6 @@
 module Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.TypeOperatorsChecker where
 
-import PrelNames (eqTyConName)
+-- import GHC.Builtin.Types (eqTyConName)
 import qualified Name    as GHC (nameOccName)
 import qualified OccName as GHC (isTcOcc, isSymOcc)
 
@@ -33,7 +33,7 @@ chkTypeOperatorsDecl = conditional chkTypeOperatorsDecl' TypeOperators
 chkTypeOperatorsType' :: CheckNode Type
 chkTypeOperatorsType' t@(InfixTypeApp _ op _)
   | Just name <- semanticsName op
-  , name == eqTyConName
+  -- , name == eqTyConName
   = return t
   | otherwise = addEvidence TypeOperators t
 chkTypeOperatorsType' t = return t
@@ -47,11 +47,11 @@ chkTypeOperatorsInstHead' ih@InfixInstanceHead{} = addEvidence TypeOperators ih
 chkTypeOperatorsInstHead' ih = return ih
 
 chkTypeOperatorsDecl' :: CheckNode Decl
-chkTypeOperatorsDecl' d = do
-  let dhs = universeBi d :: [DeclHead]
-  anyNeedsTO <- liftM or $ mapM isOperatorM dhs
-  if anyNeedsTO then addEvidence TypeOperators d
-                else return d
+chkTypeOperatorsDecl' d = undefined
+  -- let dhs = undefined --universeBi d :: [DeclHead]
+  -- anyNeedsTO <- liftM or $ mapM isOperatorM dhs
+  -- if anyNeedsTO then addEvidence TypeOperators d
+  --               else return d
 
 -- OccName: [Type and class operator definitions]
   -- We are not just looking for a *syntactically-infix* declaration,

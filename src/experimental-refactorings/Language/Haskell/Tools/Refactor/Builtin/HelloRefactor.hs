@@ -13,7 +13,7 @@ tryItOut :: String -> String -> IO ()
 tryItOut = tryRefactor (localRefactoring . helloRefactor)
 
 helloRefactor :: RealSrcSpan -> LocalRefactoring
-helloRefactor sp = return . (nodesContained sp .- helloExpr)
+helloRefactor sp = undefined --return . (nodesContained sp .- helloExpr)
 
 helloExpr :: Expr -> Expr
 helloExpr e = trace ("\n### Hello: " ++ prettyPrint e) $ e

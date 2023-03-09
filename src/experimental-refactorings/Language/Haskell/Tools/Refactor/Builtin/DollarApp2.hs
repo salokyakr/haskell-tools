@@ -15,7 +15,7 @@ tryItOut :: String -> String -> IO ()
 tryItOut = tryRefactor (localRefactoring . dollarApp)
 
 dollarApp :: RealSrcSpan -> LocalRefactoring
-dollarApp sp = nodesContained sp !~ replaceExpr
+dollarApp sp = undefined --nodesContained sp !~ replaceExpr
 
 replaceExpr :: Expr -> LocalRefactor Expr
 replaceExpr (App fun (Paren arg)) = mkInfixApp fun <$> referenceOperator dollarName <*> pure arg

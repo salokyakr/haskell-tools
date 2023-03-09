@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf, LiberalTypeSynonyms #-}
 
 module Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.FlexibleInstancesChecker where
 
@@ -72,15 +72,15 @@ chkTypeArg cls ty = do
 
 -- | Checks a type argument of class whether it has only (distinct) type variable arguments.
 chkNormalTypeArg :: CheckNode Type
-chkNormalTypeArg vars = performCheck . refact rmTypeMisc $ vars
+chkNormalTypeArg vars = undefined -- performCheck . refact rmTypeMisc $ vars
 
   where performCheck vars = do
-          (isOk, (_, vs)) <- runStateT (runMaybeT (chkAll vars)) ([],[])
-          case isOk of
-            Just isOk ->
-              unless (isOk && length vs == (length . nubBy ((==) `on` (semanticsName . (^. simpleName))) $ vs)) --tyvars are different
-                (addEvidence_ FlexibleInstances vars)
-            Nothing   -> error "chkNormalTypeArg: Couldn't look up something"
+          -- (isOk, (_, vs)) <- runStateT (runMaybeT (chkAll vars)) ([],[])
+          -- case isOk of
+          --   Just isOk ->
+          --     unless (isOk && length vs == (length . nubBy ((==) `on` (semanticsName . (^. simpleName))) $ vs)) --tyvars are different
+          --       (addEvidence_ FlexibleInstances vars)
+          --   Nothing   -> error "chkNormalTypeArg: Couldn't look up something"
           return vars
 
         chkAll x =
@@ -95,24 +95,24 @@ chkNormalTypeArg vars = performCheck . refact rmTypeMisc $ vars
 
         ifM cond f = do b <- cond; if b then (return b) else f
 
-        chkUnitTyCon (VarType x) = do
-          sname <- tyVarSemNameM x
-          -- standalone top-level type variables are not accepted
-          -- NOTE: -XHaskell98 operator type variables??
-          -- NOTE VarType is either TyCon or TyVar
-          --      if it is a TyCon, it cannot be wired in (Int, Char, etc)
-          if | GHC.isTyVarName   sname -> addTyVarM x >> return False
-             | GHC.isWiredInName sname -> addTyConM x >> return False
-             | GHC.isTyConName   sname -> addTyConM x >> return True
-             | otherwise               -> return True -- NEVER
+        -- chkUnitTyCon (VarType x) = do
+        --   sname <- tyVarSemNameM x
+        --   -- standalone top-level type variables are not accepted
+        --   -- NOTE: -XHaskell98 operator type variables??
+        --   -- NOTE VarType is either TyCon or TyVar
+        --   --      if it is a TyCon, it cannot be wired in (Int, Char, etc)
+        --   if | GHC.isTyVarName   sname -> addTyVarM x >> return False
+        --      | GHC.isWiredInName sname -> addTyConM x >> return False
+        --      | GHC.isTyConName   sname -> addTyConM x >> return True
+        --      | otherwise               -> return True -- NEVER
         chkUnitTyCon _ = return False
 
 
-        chkSingleTyVar (VarType x) = do
-          sname <- tyVarSemNameM x
-          if (GHC.isTyVarName sname)
-            then addTyVarM x >> return True
-            else addTyConM x >> return False
+        -- chkSingleTyVar (VarType x) = do
+        --   sname <- tyVarSemNameM x
+        --   if (GHC.isTyVarName sname)
+        --     then addTyVarM x >> return True
+        --     else addTyConM x >> return False
         chkSingleTyVar _ = return False
 
 
@@ -175,7 +175,7 @@ hasOnlyDistinctTyVars ty
 dropCasts :: GHC.Type -> GHC.Type
 dropCasts (GHC.CastTy ty _)     = dropCasts ty
 dropCasts (GHC.AppTy t1 t2)     = GHC.mkAppTy (dropCasts t1) (dropCasts t2)
-dropCasts (GHC.FunTy t1 t2)     = GHC.mkFunTy (dropCasts t1) (dropCasts t2)
+-- dropCasts (GHC.FunTy t1 t2)     = GHC.mkFunTy (dropCasts t1) (dropCasts t2)
 dropCasts (GHC.TyConApp tc tys) = GHC.mkTyConApp tc (map dropCasts tys)
 dropCasts (GHC.ForAllTy b ty)   = GHC.ForAllTy (dropCastsB b) (dropCasts ty)
 dropCasts ty                    = ty

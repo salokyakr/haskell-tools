@@ -25,14 +25,15 @@ generateExports mod = return (modHead & annJust & mhExports & annMaybe
 -- | Get all the top-level definitions with flags that mark if they can contain other top-level definitions
 -- (classes and data declarations).
 getTopLevels :: Module -> [(GHC.Name, Bool)]
-getTopLevels mod = catMaybes $ map (\d -> fmap (,exportContainOthers d)
-                                               (foldl (<|>) Nothing $ map semanticsName $ d ^? elementName))
-                                   (filter (\case TypeSigDecl{} -> False; _ -> True)
-                                      $ mod ^? modDecl & annList)
-  where exportContainOthers :: Decl -> Bool
-        exportContainOthers (DataDecl {}) = True
-        exportContainOthers (ClassDecl {}) = True
-        exportContainOthers _ = False
+getTopLevels mod = undefined
+  --  catMaybes $ map (\d -> fmap (,exportContainOthers d)
+  --                                              (foldl (<|>) Nothing $ map semanticsName $ d ^? elementName))
+  --                                  (filter (\case TypeSigDecl{} -> False; _ -> True)
+  --                                     $ mod ^? modDecl & annList)
+  -- where exportContainOthers :: Decl -> Bool
+  --       exportContainOthers (DataDecl {}) = True
+  --       exportContainOthers (ClassDecl {}) = True
+  --       exportContainOthers _ = False
 
 -- | Create the export for a give name.
 createExports :: [(GHC.Name, Bool)] -> ExportSpecs

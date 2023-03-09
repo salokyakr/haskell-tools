@@ -87,11 +87,11 @@ extra-source-files: examples/Project/has-cabal/*.hs
 
 library
   build-depends:       base                       
-                     , aeson                     >= 1.0   && < 1.5
+                     , aeson                      
                      , bytestring                >= 0.10  && < 1.0
                      , deepseq                   >= 1.4   && < 2.0
                      , filepath                  >= 1.4   && < 2.0
-                     , strict                    >= 0.3   && < 0.4
+                     , strict                   
                      , containers                >= 0.5   && < 0.7
                      , mtl                       >= 2.2   && < 2.3
                      , split                     >= 0.2   && < 1.0
@@ -100,7 +100,7 @@ library
                      , ghc                      
                      , ghc-paths                 >= 0.1   && < 0.2
                      , references                >= 0.3.2 && < 1.0
-                     , network                   >= 2.6   && < 2.9
+                     , network                   
                      , Diff                      >= 0.3   && < 0.4
                      , Cabal                    
                      , pretty                    >= 1.1   && < 1.2
@@ -108,7 +108,7 @@ library
                      , template-haskell          
                      , haskell-tools-prettyprint >= 1.1   && < 1.2
                      , haskell-tools-refactor    >= 1.1   && < 1.2
-                     , haskell-tools-builtin-refactorings >= 1.1   && < 1.2
+                     , haskell-tools-builtin-refactorings
                      , fswatch                   >= 0.1   && < 0.2
 
   exposed-modules:     Language.Haskell.Tools.Daemon
@@ -136,7 +136,7 @@ executable ht-daemon
                      , haskell-tools-daemon
                      , directory                 >= 1.2 && < 1.4
                      , filepath                  >= 1.4 && < 2.0
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
+                     , haskell-tools-builtin-refactorings
   hs-source-dirs:      exe
   main-is:             Main.hs
   default-language:    Haskell2010
@@ -155,9 +155,9 @@ test-suite haskell-tools-daemon-tests
                      , process                   >= 1.6  && < 1.7
                      , filepath                  >= 1.4  && < 2.0
                      , bytestring                >= 0.10 && < 0.11
-                     , network                   >= 2.6  && < 2.9
-                     , aeson                     >= 1.0  && < 1.5
+                     , network                   
+                     , aeson                     
                      , Glob                      >= 0.9  && < 0.10
                      , haskell-tools-daemon
-                     , haskell-tools-builtin-refactorings >= 1.1 && < 1.2
+                     , haskell-tools-builtin-refactorings
   default-language:    Haskell2010

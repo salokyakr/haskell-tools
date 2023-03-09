@@ -89,34 +89,34 @@ srcDirFromRoot fileName moduleName
 -- The flags and extensions set in the cabal file will be used by default.
 modulesFromCabalFile :: FilePath -> FilePath -> IO [ModuleCollection ModuleNameStr]
 -- now adding all conditional entries, regardless of flags
-modulesFromCabalFile root cabal = (getModules . setupFlags <$> readGenericPackageDescription silent (root </> cabal))
-  where getModules pkg = maybe [] (maybe [] (:[]) . toModuleCollection pkg) (library pkg)
-                           ++ catMaybes (map (toModuleCollection pkg) (executables pkg))
-                           ++ catMaybes (map (toModuleCollection pkg) (testSuites pkg))
-                           ++ catMaybes (map (toModuleCollection pkg) (benchmarks pkg))
+modulesFromCabalFile root cabal = undefined -- (getModules . setupFlags <$> readGenericPackageDescription silent (root </> cabal))
+  -- where getModules pkg = maybe [] (maybe [] (:[]) . toModuleCollection pkg) (library pkg)
+  --                          ++ catMaybes (map (toModuleCollection pkg) (executables pkg))
+  --                          ++ catMaybes (map (toModuleCollection pkg) (testSuites pkg))
+  --                          ++ catMaybes (map (toModuleCollection pkg) (benchmarks pkg))
 
-        toModuleCollection :: ToModuleCollection tmc => PackageDescription -> tmc -> Maybe (ModuleCollection ModuleNameStr)
-        toModuleCollection PackageDescription{ buildTypeRaw = Just Custom } _
-          = throw $ UnsupportedPackage "'build-type: custom' setting in cabal file"
-        toModuleCollection pkg tmc
-          = let bi = getBuildInfo tmc
-                packageName = pkgName $ package pkg
-             in if buildable bi
-                  then Just $ ModuleCollection (mkModuleCollKey packageName tmc) False
-                                root
-                                (map (normalise . (root </>)) $ hsSourceDirs bi)
-                                (map (\(mn, fs) -> (moduleName mn, fs)) $ getModuleSourceFiles tmc)
-                                (Map.fromList $ map modRecord $ getModuleNames tmc)
-                                (flagsFromBuildInfo bi)
-                                (loadFlagsFromBuildInfo bi)
-                                (map (\(Dependency pkgName _) -> LibraryMC (unPackageName pkgName)) (targetBuildDepends bi))
-                  else Nothing
-          where modRecord mn = ( moduleName mn, ModuleNotLoaded NoCodeGen (needsToCompile tmc mn) )
-        moduleName = concat . intersperse "." . components
-        setupFlags = either (\deps -> error $ "Missing dependencies: " ++ show deps) fst
-                       . finalizePD (mkFlagAssignment [])
-                                    (ComponentRequestedSpec True True) (const True) buildPlatform
-                                    (unknownCompilerInfo buildCompilerId NoAbiTag) []
+        -- toModuleCollection :: ToModuleCollection tmc => PackageDescription -> tmc -> Maybe (ModuleCollection ModuleNameStr)
+        -- toModuleCollection PackageDescription{ buildTypeRaw = Just Custom } _
+        --   = throw $ UnsupportedPackage "'build-type: custom' setting in cabal file"
+        -- toModuleCollection pkg tmc
+        --   = let bi = getBuildInfo tmc
+        --         packageName = pkgName $ package pkg
+        --      in if buildable bi
+        --           then Just $ ModuleCollection (mkModuleCollKey packageName tmc) False
+        --                         root
+        --                         (map (normalise . (root </>)) $ hsSourceDirs bi)
+        --                         (map (\(mn, fs) -> (moduleName mn, fs)) $ getModuleSourceFiles tmc)
+        --                         (Map.fromList $ map modRecord $ getModuleNames tmc)
+        --                         (flagsFromBuildInfo bi)
+        --                         (loadFlagsFromBuildInfo bi)
+        --                         (map (\(Dependency pkgName _) -> LibraryMC (unPackageName pkgName)) (targetBuildDepends bi))
+        --           else Nothing
+        --   where modRecord mn = ( moduleName mn, ModuleNotLoaded NoCodeGen (needsToCompile tmc mn) )
+        -- moduleName = concat . intersperse "." . components
+        -- setupFlags = either (\deps -> error $ "Missing dependencies: " ++ show deps) fst
+        --                . finalizePD (mkFlagAssignment [])
+        --                             (ComponentRequestedSpec True True) (const True) buildPlatform
+        --                             (unknownCompilerInfo buildCompilerId NoAbiTag) []
 
 data UnsupportedPackage = UnsupportedPackage String
   deriving Show
@@ -182,10 +182,10 @@ instance ToModuleCollection Benchmark where
 -- | A default method of getting the main module using the ghc-options field, checking for the
 -- option -main-is.
 getMain' :: BuildInfo -> String
-getMain' bi
-  = case ls of _:e:_ -> intercalate "." $ filter (isUpper . head) $ groupBy ((==) `on` (== '.')) e
-               _ -> "Main"
-  where ls = dropWhile (/= "-main-is") (concatMap snd (options bi))
+getMain' bi = undefined
+  -- = case ls of _:e:_ -> intercalate "." $ filter (isUpper . head) $ groupBy ((==) `on` (== '.')) e
+  --              _ -> "Main"
+  -- where ls = dropWhile (/= "-main-is") (concatMap snd (options bi))
 
 -- | Checks if the module collection created from a folder without .cabal file.
 isDirectoryMC :: ModuleCollectionId -> Bool
@@ -244,30 +244,30 @@ loadFlagsFromBuildInfo bi@BuildInfo{ cppOptions } df
 -- for a single module. See 'compileInContext'.
 flagsFromBuildInfo :: BuildInfo -> DynFlags -> IO DynFlags
 -- the import pathes are already set globally
-flagsFromBuildInfo bi@BuildInfo{ options } df
-  = do (df',unused,warnings) <- parseDynamicFlags df (map (L noSrcSpan) $ concatMap snd options)
-       mapM_ putStrLn (map (unLoc . warnMsg) warnings ++ map (("Flag is not used: " ++) . unLoc) unused)
-       return $ (flip lang_set (toGhcLang =<< defaultLanguage bi))
-         $ foldl (.) id (map (\case EnableExtension ext -> setEnabled True ext
-                                    DisableExtension ext -> setEnabled False ext
-                        ) (usedExtensions bi))
-         $ foldr (.) id (map (setEnabled True) (languageDefault (defaultLanguage bi)))
-         $ df'
-  where toGhcLang Cabal.Haskell98 = Just GHC.Haskell98
-        toGhcLang Cabal.Haskell2010 = Just GHC.Haskell2010
-        toGhcLang _ = Nothing
+flagsFromBuildInfo bi@BuildInfo{ options } df = undefined
+  -- = do (df',unused,warnings) <- parseDynamicFlags df (map (L noSrcSpan) $ concatMap snd options)
+  --      mapM_ putStrLn (map (unLoc . warnMsg) warnings ++ map (("Flag is not used: " ++) . unLoc) unused)
+  --      return $ (flip lang_set (toGhcLang =<< defaultLanguage bi))
+  --        $ foldl (.) id (map (\case EnableExtension ext -> setEnabled True ext
+  --                                   DisableExtension ext -> setEnabled False ext
+  --                       ) (usedExtensions bi))
+  --        $ foldr (.) id (map (setEnabled True) (languageDefault (defaultLanguage bi)))
+  --        $ df'
+  -- where toGhcLang Cabal.Haskell98 = Just GHC.Haskell98
+  --       toGhcLang Cabal.Haskell2010 = Just GHC.Haskell2010
+  --       toGhcLang _ = Nothing
 
         -- We don't put the default settings (ImplicitPrelude, MonomorphismRestriction) here
         -- because that overrides the opposite extensions (NoImplicitPrelude, NoMonomorphismRestriction)
         -- enabled in modules.
-        languageDefault (Just Cabal.Haskell2010)
-          = [ DatatypeContexts, DoAndIfThenElse, EmptyDataDecls, ForeignFunctionInterface
-            , PatternGuards, RelaxedPolyRec, TraditionalRecordSyntax ]
-        -- Haskell 98 is the default
-        languageDefault _
-          = [ DatatypeContexts, NondecreasingIndentation, NPlusKPatterns, TraditionalRecordSyntax ]
+        -- languageDefault (Just Cabal.Haskell2010)
+        --   = [ DatatypeContexts, DoAndIfThenElse, EmptyDataDecls, ForeignFunctionInterface
+        --     , PatternGuards, RelaxedPolyRec, TraditionalRecordSyntax ]
+        -- -- Haskell 98 is the default
+        -- languageDefault _
+        --   = [ DatatypeContexts, NondecreasingIndentation, NPlusKPatterns, TraditionalRecordSyntax ]
 
-        setEnabled enable ext
-          = case translateExtension ext of
-              Just e -> (if enable then setExtensionFlag' else unSetExtensionFlag') e
-              Nothing -> id
+        -- setEnabled enable ext
+        --   = case translateExtension ext of
+        --       Just e -> (if enable then setExtensionFlag' else unSetExtensionFlag') e
+        --       Nothing -> id

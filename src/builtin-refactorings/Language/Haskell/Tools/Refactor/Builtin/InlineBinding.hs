@@ -4,7 +4,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeApplications, LiberalTypeSynonyms #-}
 
 -- | Defines the inline binding refactoring that removes a value binding and replaces all occurences
 -- with an expression equivalent to the body of the binding.
@@ -31,43 +31,43 @@ tryItOut = tryRefactor inlineBinding
 
 
 inlineBinding :: RealSrcSpan -> Refactoring
-inlineBinding span namedMod@(_,mod) mods
-  = let topLevel :: Simple Traversal Module DeclList
-        topLevel = nodesContaining span
-        local :: Simple Traversal Module LocalBindList
-        local = nodesContaining span
-        exprs :: Simple Traversal Module Expr
-        exprs = nodesContaining span
-        elemAccess :: (BindingElem d) => AnnList d -> Maybe ValueBind
-        elemAccess = getValBindInList span
-        removed = catMaybes $ map elemAccess (mod ^? topLevel) ++ map elemAccess (mod ^? local)
-     in case reverse removed of
-          [] -> refactError "No binding is selected."
-          removedBinding:_ ->
-           let [removedBindingName] = nub $ catMaybes $ map semanticsName (removedBinding ^? bindingName)
-            in if | any (containInlined removedBindingName) mods
-                    -> refactError "Cannot inline the definition, it is used in other modules."
-                  | _:_ <- mod ^? modHead & annJust & mhExports & annJust & biplateRef
-                                          & filtered (\n -> semanticsName (n :: QualifiedName) == Just removedBindingName)
-                    -> refactError "Cannot inline the definition, it is present in the export list."
-                  | otherwise -> localRefactoring (inlineBinding' topLevel local exprs removedBinding removedBindingName) namedMod mods
+inlineBinding span namedMod@(_,mod) mods = undefined
+  -- = let topLevel :: Simple Traversal Module DeclList
+  --       topLevel = nodesContaining span
+  --       local :: Simple Traversal Module LocalBindList
+  --       local = nodesContaining span
+  --       exprs :: Simple Traversal Module Expr
+  --       exprs = nodesContaining span
+  --       elemAccess :: (BindingElem d) => AnnList d -> Maybe ValueBind
+  --       elemAccess = getValBindInList span
+  --       removed = catMaybes $ map elemAccess (mod ^? topLevel) ++ map elemAccess (mod ^? local)
+  --    in case reverse removed of
+  --         [] -> refactError "No binding is selected."
+  --         removedBinding:_ ->
+  --          let [removedBindingName] = nub $ catMaybes $ map semanticsName (removedBinding ^? bindingName)
+  --           in if | any (containInlined removedBindingName) mods
+  --                   -> refactError "Cannot inline the definition, it is used in other modules."
+  --                 | _:_ <- mod ^? modHead & annJust & mhExports & annJust & biplateRef
+  --                                         & filtered (\n -> semanticsName (n :: QualifiedName) == Just removedBindingName)
+  --                   -> refactError "Cannot inline the definition, it is present in the export list."
+                  -- | otherwise -> localRefactoring (inlineBinding' topLevel local exprs removedBinding removedBindingName) namedMod mods
 
 -- | Performs the inline binding on a single module.
 inlineBinding' :: Simple Traversal Module DeclList -> Simple Traversal Module LocalBindList 
                     -> Simple Traversal Module Expr -> ValueBind -> GHC.Name -> LocalRefactoring
-inlineBinding' topLevelRef localRef exprRef removedBinding removedBindingName mod
-  = do replacement <- createReplacement removedBinding
-       let RealSrcSpan bindingSpan = getRange removedBinding
-       mod' <- removeBindingAndSig topLevelRef localRef exprRef removedBindingName mod
-       (mod'', used) <- runStateT (descendBiM (replaceInvocations bindingSpan removedBindingName replacement) mod') False
-       if not used
-         then refactError "The selected definition is not used, it can be safely deleted."
-         else return mod''
+inlineBinding' topLevelRef localRef exprRef removedBinding removedBindingName mod = undefined
+  -- = do replacement <- createReplacement removedBinding
+  --      let RealSrcSpan bindingSpan = getRange removedBinding
+  --      mod' <- removeBindingAndSig topLevelRef localRef exprRef removedBindingName mod
+  --      (mod'', used) <- runStateT (descendBiM (replaceInvocations bindingSpan removedBindingName replacement) mod') False
+  --      if not used
+  --        then refactError "The selected definition is not used, it can be safely deleted."
+  --        else return mod''
 
 -- | True if the given module contains the name of the inlined definition.
 containInlined :: GHC.Name -> ModuleDom -> Bool
-containInlined name (_,mod)
-  = any (\qn -> semanticsName qn == Just name) $ (mod ^? biplateRef :: [QualifiedName])
+containInlined name (_,mod) = undefined
+  -- = any (\qn -> semanticsName qn == Just name) $ (mod ^? biplateRef :: [QualifiedName])
 
 -- | Removes the inlined binding and the accompanying type and fixity signatures.
 removeBindingAndSig :: Simple Traversal Module DeclList -> Simple Traversal Module LocalBindList
@@ -79,51 +79,51 @@ removeBindingAndSig topLevelRef localRef exprRef name
 
 removeBindingAndSig' :: (SourceInfoTraversal d, BindingElem d) 
                      => GHC.Name -> AnnList d -> LocalRefactor (AnnList d)
-removeBindingAndSig' name ls = do
-   bnds <- mapM notThatBindOrSig (ls ^? annList)
-   return $ (annList .- removeNameFromSigBind) (filterListIndexed (\i _ -> bnds !! i) ls)
-  where notThatBindOrSig e
-          | Just sb <- e ^? sigBind = return $ nub (map semanticsName (sb ^? tsName & annList & simpleName)) /= [Just name]
-          | Just vb <- e ^? valBind = do
-             let isThat = nub (map semanticsName (vb ^? bindingName)) == [Just name]
-             when isThat (void $ accessRhs !| checkForRecursion name $ vb)
-             return $ not isThat
-          | Just fs <- e ^? fixitySig = return $ nub (map semanticsName (fs ^? fixityOperators & annList & operatorName)) /= [Just name]
-          | otherwise = return True
+removeBindingAndSig' name ls = undefined
+  --  bnds <- mapM notThatBindOrSig (ls ^? annList)
+  --  return $ (annList .- removeNameFromSigBind) (filterListIndexed (\i _ -> bnds !! i) ls)
+  -- where notThatBindOrSig e
+  --         | Just sb <- e ^? sigBind = return $ nub (map semanticsName (sb ^? tsName & annList & simpleName)) /= [Just name]
+  --         | Just vb <- e ^? valBind = do
+  --            let isThat = nub (map semanticsName (vb ^? bindingName)) == [Just name]
+  --            when isThat (void $ accessRhs !| checkForRecursion name $ vb)
+  --            return $ not isThat
+  --         | Just fs <- e ^? fixitySig = return $ nub (map semanticsName (fs ^? fixityOperators & annList & operatorName)) /= [Just name]
+  --         | otherwise = return True
 
-        removeNameFromSigBind
-          = (sigBind & tsName .- filterList (\n -> semanticsName (n ^. simpleName) /= Just name))
-             . (fixitySig & fixityOperators .- filterList (\n -> semanticsName (n ^. operatorName) /= Just name))
+  --       removeNameFromSigBind
+  --         = (sigBind & tsName .- filterList (\n -> semanticsName (n ^. simpleName) /= Just name))
+  --            . (fixitySig & fixityOperators .- filterList (\n -> semanticsName (n ^. operatorName) /= Just name))
 
-        accessRhs = valBindRhs
-                      &+& valBindLocals & accessLocalRhs
-                      &+& funBindMatches & annList & matchRhs
-                      &+& funBindMatches & annList & (matchRhs &+& matchBinds & accessLocalRhs)
-        accessLocalRhs = annJust & localBinds & annList & localVal & accessRhs
+  --       accessRhs = valBindRhs
+  --                     &+& valBindLocals & accessLocalRhs
+  --                     &+& funBindMatches & annList & matchRhs
+  --                     &+& funBindMatches & annList & (matchRhs &+& matchBinds & accessLocalRhs)
+  --       accessLocalRhs = annJust & localBinds & annList & localVal & accessRhs
 
 -- | Check the extracted bindings right-hand-side for possible recursion
 checkForRecursion :: GHC.Name -> Rhs -> LocalRefactor ()
-checkForRecursion n = void . (biplateRef !| checkNameForRecursion n)
+checkForRecursion n = undefined -- void . (biplateRef !| checkNameForRecursion n)
 
 checkNameForRecursion :: GHC.Name -> AST.Name -> LocalRefactor ()
 checkNameForRecursion name n
-  | semanticsName (n ^. simpleName) == Just name
-  = refactError $ "Cannot inline definitions containing direct recursion. Recursive call at: "
-                    ++ shortShowSpanWithFile (getRange n)
+  -- | semanticsName (n ^. simpleName) == Just name
+  -- = refactError $ "Cannot inline definitions containing direct recursion. Recursive call at: "
+  --                   ++ shortShowSpanWithFile (getRange n)
   | otherwise = return ()
 
 -- | As a top-down transformation, replaces the occurrences of the binding with generated expressions. This method passes
 -- the captured arguments of the function call to generate simpler results.
 replaceInvocations :: RealSrcSpan -> GHC.Name -> ([[GHC.Name]] -> [Expr] -> Expr) -> Expr 
                         -> StateT Bool LocalRefactor Expr
-replaceInvocations bindingRange name replacement expr
-  | (Var n, args) <- splitApps expr
-  , semanticsName (n ^. simpleName) == Just name
-  = do put True
-       replacement (map (map (^. _1)) $ semanticsScope expr)
-         <$> mapM (descendM (replaceInvocations bindingRange name replacement)) args
-  | otherwise
-  = descendM (replaceInvocations bindingRange name replacement) expr
+replaceInvocations bindingRange name replacement expr = undefined
+  -- | (Var n, args) <- splitApps expr
+  -- , semanticsName (n ^. simpleName) == Just name
+  -- = do put True
+  --      replacement (map (map (^. _1)) $ semanticsScope expr)
+  --        <$> mapM (descendM (replaceInvocations bindingRange name replacement)) args
+  -- | otherwise
+  -- = descendM (replaceInvocations bindingRange name replacement) expr
 
 -- | Splits an application into function and arguments. Works also for operators.
 splitApps :: Expr -> (Expr, [Expr])
@@ -163,11 +163,11 @@ createReplacement (FunctionBind matches)
 -- | Replaces names with expressions according to a mapping.
 replaceExprs :: [(GHC.Name, Expr)] -> Expr -> Expr
 replaceExprs [] = id
-replaceExprs replaces = (uniplateRef .-) $ \case
-    Var n | Just name <- semanticsName (n ^. simpleName)
-          , Just replace <- lookup name replaces
-          -> replace
-    e -> e
+-- replaceExprs replaces = (uniplateRef .-) $ \case
+--     Var n | Just name <- semanticsName (n ^. simpleName)
+--           , Just replace <- lookup name replaces
+--           -> replace
+--     e -> e
 
 -- | Matches a pattern list with an expression list and generates bindings. Matches until an argument cannot be matched.
 matchArguments :: [Pattern] -> [Expr] -> ([(GHC.Name, Expr)], [Pattern], [Expr])
@@ -182,19 +182,19 @@ matchArguments [] exprs = ([], [], exprs)
 
 -- | Matches a pattern with an expression. Generates a mapping of names to expressions.
 staticPatternMatch :: Pattern -> Expr -> Maybe [(GHC.Name, Expr)]
-staticPatternMatch (VarPat n) e
-  | Just name <- semanticsName $ n ^. simpleName
-  = Just [(name, e)]
-staticPatternMatch (AppPat n (AnnList args)) e
-  | (Var n', exprs) <- splitApps e
-  , length args == length exprs
-      && semanticsName (n ^. simpleName) == semanticsName (n' ^. simpleName)
-  , Just subs <- sequence $ zipWith staticPatternMatch args exprs
-  = Just $ concat subs
-staticPatternMatch (TuplePat (AnnList pats)) (Tuple (AnnList args))
-  | length pats == length args
-  , Just subs <- sequence $ zipWith staticPatternMatch pats args
-  = Just $ concat subs
+-- staticPatternMatch (VarPat n) e
+--   | Just name <- semanticsName $ n ^. simpleName
+--   = Just [(name, e)]
+-- staticPatternMatch (AppPat n (AnnList args)) e
+--   | (Var n', exprs) <- splitApps e
+--   , length args == length exprs
+--       && semanticsName (n ^. simpleName) == semanticsName (n' ^. simpleName)
+--   , Just subs <- sequence $ zipWith staticPatternMatch args exprs
+--   = Just $ concat subs
+-- staticPatternMatch (TuplePat (AnnList pats)) (Tuple (AnnList args))
+--   | length pats == length args
+--   , Just subs <- sequence $ zipWith staticPatternMatch pats args
+--   = Just $ concat subs
 staticPatternMatch _ _ = Nothing
 
 replaceMatch :: Match -> Alt

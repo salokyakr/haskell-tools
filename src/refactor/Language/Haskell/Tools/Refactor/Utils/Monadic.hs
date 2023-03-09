@@ -43,7 +43,7 @@ localRefactoring ref (name, mod) _
 localRefactoringRes :: ((UnnamedModule -> UnnamedModule) -> a -> a)
                           -> UnnamedModule -> LocalRefactor a -> Refactor a
 localRefactoringRes access mod trf
-  = let init = RefactorCtx (semanticsModule $ mod ^. semantics) mod (mod ^? modImports&annList)
+  = let init = undefined --RefactorCtx (semanticsModule $ mod ^. semantics) mod (mod ^? modImports&annList)
      in flip runReaderT init $ do (mod, recorded) <- runWriterT (fromRefactorT trf)
                                   return $ access (insertText (rights recorded) . addGeneratedImports (lefts recorded)) mod
 
@@ -159,11 +159,11 @@ referenceName' makeName name
   = do RefactorCtx {refCtxRoot = mod, refCtxImports = imports, refModuleName = thisModule} <- ask
        if maybe True (thisModule ==) (GHC.nameModule_maybe name)
          then return $ makeName [] name -- in the same module, use simple name
-         else let possibleImports = filter ((name `elem`) . (\imp -> semanticsImported $ imp ^. semantics)) imports
-                  fromPrelude = name `elem` semanticsImplicitImports (mod ^. semantics)
+         else let possibleImports = undefined --filter ((name `elem`) . (\imp -> semanticsImported $ imp ^. semantics)) imports
+                  fromPrelude = name `elem` [] --semanticsImplicitImports (mod ^. semantics)
                in if | fromPrelude -> return $ makeName [] name
-                     | null possibleImports -> do tell [Left name]
-                                                  return $ makeName (moduleParts name) name
+                    --  | null possibleImports -> do tell [Left name]
+                    --                               return $ makeName (moduleParts name) name
                      | otherwise -> return $ referenceBy makeName name possibleImports
                                      -- use it according to the best available import
   where moduleParts = maybe [] (splitOn "." . GHC.moduleNameString . GHC.moduleName) . GHC.nameModule_maybe
