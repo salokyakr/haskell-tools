@@ -15,7 +15,7 @@ import Language.Haskell.Tools.AST
 
 -- Annotations
 instance (TreeDebug e dom st, ShowSrcInfo st) => TreeDebug (Ann e) dom st where
-  treeDebug' i (Ann a e) = identLine i ++ show (a ^. sourceInfo) ++ " " ++ take 40 (show e) ++ "..." ++ treeDebug' (i+1) e
+  treeDebug' i (Ann a e) = identLine i ++ show (a ^. sourceInfo) ++ " ---> " ++ (show e) ++ treeDebug' (i+1) e
 
 identLine :: Int -> String
 identLine i = "\n" ++ replicate (i*2) ' '
