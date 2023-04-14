@@ -12,6 +12,7 @@ import Language.Haskell.Tools.Refactor.Builtin.OrganizeExtensions (organizeExten
 import Language.Haskell.Tools.Refactor.Builtin.OrganizeImports (organizeImportsRefactoring, projectOrganizeImportsRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.RenameDefinition (renameDefinitionRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.GetMatches (getMatchesQuery)
+import Language.Haskell.Tools.Refactor.Builtin.LetRefactoring (changeReturnToLetTypeRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.AutoCorrect
 
 builtinRefactorings :: [RefactoringChoice]
@@ -27,6 +28,7 @@ builtinRefactorings
     , organizeExtensionsRefactoring
     , projectOrganizeExtensionsRefactoring
     , autoCorrectRefactoring
+    , changeReturnToLetTypeRefactoring
     ]
 
 builtinQueries :: [QueryChoice]

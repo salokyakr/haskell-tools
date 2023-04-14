@@ -6,7 +6,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE BangPatterns #-}
 
-module Language.Haskell.Tools.Refactor.Builtin.ReturnToLet where
+module Language.Haskell.Tools.Refactor.Builtin.LetRefactoring where
 
 import Language.Haskell.Tools.Refactor as Refactor hiding (LambdaCase)
 import Language.Haskell.Tools.Refactor.Utils.Extensions
