@@ -20,6 +20,7 @@ import SrcLoc as GHC
 import Control.Monad.Reader
 import HsExtension (GhcPass)
 import HsPat
+import Debug.Trace (trace)
 
 import {-# SOURCE #-} Language.Haskell.Tools.BackendGHC.Exprs (trfExpr)
 import {-# SOURCE #-} Language.Haskell.Tools.BackendGHC.Types (trfType)
@@ -79,8 +80,10 @@ trfPattern' (SumPat _ pat tag arity)
        AST.UUnboxedSumPat <$> makeList " | " (after AnnOpen) (mapM makePlaceholder locsBefore)
                           <*> trfPattern pat
                           <*> makeList " | " (before AnnClose) (mapM makePlaceholder locsAfter)
-  where makePlaceholder l = annLocNoSema (pure (srcLocSpan l)) (pure AST.UUnboxedSumPlaceHolder)
-trfPattern' (XPat _) = pure AST.UWildPat
+  where makePlaceholder l = (annLocNoSema (pure (srcLocSpan l)) (pure AST.UUnboxedSumPlaceHolder))
+trfPattern' (XPat l) = AST.UXPat <$> annLocNoSema (pure (logAndGetLoc l)) (pure $ AST.UWildPat)
+  where
+    logAndGetLoc l = trace ("Reached XPAT" ++ (AST.shortShowSpan $ getLoc l)) $ getLoc l
 trfPattern' p = unhandledElement "pattern" p
 
 trfPatternField' :: forall n r p . (TransformName n r, n ~ GhcPass p) => HsRecField n (LPat n) -> Trf (AST.UPatternField (Dom r) RangeStage)

@@ -43,8 +43,9 @@ printRose' parent (RoseTree (RoseSpan (SourceTemplateNode rng elems minInd relIn
              = pprProblem $ "More child elem in template than actual children in: "
                               ++ shortShowSpanWithFile (srcLocSpan $ RealSrcLoc parent)
            printTemplateElems [] _
-             = pprProblem $ "Not all children are used to pretty printing in: "
-                              ++ shortShowSpanWithFile (srcLocSpan $ RealSrcLoc parent)
+             = return empty
+            --  pprProblem $ "Not all children are used to pretty printing in: "
+            --                   ++ shortShowSpanWithFile (srcLocSpan $ RealSrcLoc parent)
 
            min = minInd `max` getPosByRelative parent relInd
 

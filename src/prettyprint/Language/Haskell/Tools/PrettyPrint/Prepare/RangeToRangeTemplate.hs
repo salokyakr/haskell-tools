@@ -12,9 +12,10 @@ import Control.Reference ((^.))
 import Data.List
 import Data.Maybe (Maybe(..), mapMaybe)
 
-import FastString as GHC (unpackFS)
+import FastString as GHC (unpackFS, mkFastString)
 import SrcLoc
-
+import Debug.Trace (trace)
+import Data.Data (toConstr)
 import Language.Haskell.Tools.PrettyPrint.Prepare.RangeTemplate
 
 -- | Creates a source template from the ranges and the input file.
@@ -35,25 +36,28 @@ cutUpRanges n = evalState (cutUpRanges' n) [[],[]]
             => ([SrcSpan] -> x NormRangeStage -> x RngTemplateStage) -> x NormRangeStage -> State [[SrcSpan]] (x RngTemplateStage)
         trf f ni = do stack <- get
                       case stack of 
-                        (below : top : xs) -> do
-                          let res = f below ni
-                          put ([] : (top ++ [ getRange res ]) : xs)
+                        (below1 : top : xs) -> do
+                          let below = filter isGoodSrcSpan below1
+                          let res = f (trace ("Reached cutUpRanges 1" ++ show below) below) ni
+                          let ranges = getRange res
+                          if (isGoodSrcSpan ranges) then put ([] : (top ++ [ ranges ]) : xs) else  put ([] : (top : xs))
                           return res
                         _ -> trfProblem "RangeToRangeTemplate.cutUpRanges.trf: stack is not right"
 
 -- | Cuts out a list of source ranges from a given range
 cutOutElemSpan :: [SrcSpan] -> SpanInfo NormRangeStage -> SpanInfo RngTemplateStage
 cutOutElemSpan sps (NormNodeInfo (RealSrcSpan sp))
-  = RangeTemplateNode sp $ foldl breakFirstHit (foldl breakFirstHit [RangeElem sp] loc) span
+  = RangeTemplateNode sp $ foldl (breakFirstHit False) (foldl (breakFirstHit False) [RangeElem sp] loc) span
   where (loc,span) = partition (\sp -> srcSpanStart sp == srcSpanEnd sp) sps
-        breakFirstHit (elem:rest) sp
+        breakFirstHit opt (elem:rest) sp
           = case breakUpRangeElem elem sp of
              -- only continue if the correct place for the child range is not found
-              Just pieces -> pieces ++ rest
-              Nothing -> elem : breakFirstHit rest sp
-        breakFirstHit [] inner = throw $ BreakUpProblem sp inner sps
+              Just pieces -> trace "Reached cutOutElemSpan 1"  $ pieces ++ rest
+              Nothing -> trace ("Reached cutOutElemSpan 2" ++ show elem) $ elem : (breakFirstHit False) rest sp
+        breakFirstHit opt sps (RealSrcSpan inner) = [RangeChildElem] --trace "Reached cutOutElemSpan 3" $ throw $ BreakUpProblem sp inner sps
+        breakFirstHit opt [] inner = trace ("Reached cutOutElemSpan 3" ++ show sps) $ throw $ BreakUpProblem sp inner sps
 cutOutElemSpan _ (NormNodeInfo (UnhelpfulSpan {}))
-  = trfProblem "cutOutElemSpan: no real span"
+  = RangeTemplateNode (mkRealSrcSpan (mkRealSrcLoc (mkFastString "") 100 100) (mkRealSrcLoc (mkFastString "") 100 100)) [RangeChildElem]
 
 data BreakUpProblem = BreakUpProblem { bupOuter :: RealSrcSpan
                                      , bupInner :: SrcSpan
@@ -70,9 +74,12 @@ instance Exception BreakUpProblem
 
 cutOutElemList :: [SrcSpan] -> ListInfo NormRangeStage -> ListInfo RngTemplateStage
 cutOutElemList sps (NormListInfo bef aft sep indented sp)
-  = let RealSrcSpan wholeRange = foldl1 combineSrcSpans $ sp : sps
+  = let range = foldl1 combineSrcSpans $ trace ("Reached cutOutElemList 1" ++ (show (sp : sps))) $ sp : sps
+        wholeRange = getFakeRange range
      in RangeTemplateList wholeRange bef aft sep indented (getSeparators wholeRange sps)
 
+getFakeRange (RealSrcSpan sp) = sp
+getFakeRange _ = mkRealSrcSpan (mkRealSrcLoc (mkFastString "") 100 100) (mkRealSrcLoc (mkFastString "") 100 100)
 -- | Cuts out all elements from a list, the rest is the list of separators
 getSeparators :: RealSrcSpan -> [SrcSpan] -> [RealSrcSpan]
 getSeparators sp infos@(_:_:_)
@@ -82,8 +89,8 @@ getSeparators _ _ = []
 
 cutOutElemOpt :: [SrcSpan] -> OptionalInfo NormRangeStage -> OptionalInfo RngTemplateStage
 cutOutElemOpt sps (NormOptInfo bef aft sp)
-  = let RealSrcSpan wholeRange = foldl1 combineSrcSpans $ sp : sps
-     in RangeTemplateOpt wholeRange bef aft
+  = let range = foldl1 combineSrcSpans $ sp : sps
+     in RangeTemplateOpt (getFakeRange range) bef aft
 
 -- | Breaks the given template element into possibly 2 or 3 parts by cutting out the given part
 -- if it is inside the range of the template element. Returns Nothing if the second argument is not inside.
@@ -109,33 +116,38 @@ fixRanges node = evalState (sourceInfoTraverseUp (SourceInfoTrf (trf expandToCon
         desc = modify ([]:)
         asc  = modify tail
 
+
         trf :: HasRange (x NormRangeStage)
             => ([SrcSpan] -> x RangeStage -> x NormRangeStage) -> x RangeStage -> State [[SrcSpan]] (x NormRangeStage)
         trf f ni = do stack <- get
-                      case stack of 
+                      case stack of
                         (below : top : xs) -> do
-                          let res = f below ni
-                              resRange = getRange res
+                          let res = f (trace ("Reached fixRanges 1" ++ show below ) below) ni
+                              resRange = trace ("Reached fixRanges 2" ++ (show $ getRange res)) $ getRange res
                               endOfSiblings = srcSpanEnd (collectSpanRanges (srcSpanStart resRange) top)
                               correctedRange = if endOfSiblings > srcSpanStart resRange
                                                  then mkSrcSpan endOfSiblings (max endOfSiblings (srcSpanEnd resRange))
                                                  else resRange
-                          put ([] : (top ++ [ correctedRange ]) : xs)
-                          return $ setRange correctedRange res
+                          if (isGoodSrcSpan correctedRange) then do
+                            (put ([] : (top ++ [ correctedRange ]) : xs))
+                            return $ setRange correctedRange res
+                            else do
+                              (put ([] : (top : xs)))
+                              return $ setRange (mkSrcSpan endOfSiblings (max endOfSiblings (srcSpanEnd resRange))) res
                         _ -> trfProblem "RangeToRangeTemplate.fixRanges.trf: stack is not right"
 
 -- | Expand a simple node to contain its children
 expandToContain :: [SrcSpan] -> SpanInfo RangeStage -> SpanInfo NormRangeStage
 expandToContain cont (NodeSpan sp)
-  = NormNodeInfo (checkSpans cont $ foldl1 combineSrcSpans $ sp : cont)
+  =  NormNodeInfo (trace ("Reached expandToContain 2") $ checkSpans cont $ trace ("Reached expandToContain 1") $ foldl1 combineSrcSpans $ sp : cont)
 
 expandListToContain :: [SrcSpan] -> ListInfo RangeStage -> ListInfo NormRangeStage
 expandListToContain cont (ListPos bef aft def ind sp)
-  = NormListInfo bef aft def ind (checkSpans cont $ collectSpanRanges sp cont)
+  =   NormListInfo bef aft def ind (trace ("Reached expandListToContain 2") $ checkSpans cont $ trace ("Reached expandListToContain 1") $ collectSpanRanges sp cont)
 
 expandOptToContain :: [SrcSpan] -> OptionalInfo RangeStage -> OptionalInfo NormRangeStage
 expandOptToContain cont (OptionalPos bef aft sp)
-  = NormOptInfo bef aft (checkSpans cont $ collectSpanRanges sp cont)
+  =  NormOptInfo bef aft (trace ("Reached expandOptToContain 2") $ checkSpans cont $ trace ("Reached expandOptToContain 1") $ collectSpanRanges sp cont)
 
 collectSpanRanges :: SrcLoc -> [SrcSpan] -> SrcSpan
 collectSpanRanges loc@(RealSrcLoc _) [] = srcLocSpan loc
@@ -144,6 +156,6 @@ collectSpanRanges _ ls = foldl combineSrcSpans noSrcSpan ls
 -- | Checks the contained source ranges to detect the convertion problems where we can see their location.
 checkSpans :: [SrcSpan] -> SrcSpan -> SrcSpan
 checkSpans spans res
-  = if any (not . isGoodSrcSpan) spans && isGoodSrcSpan res
+  = if (trace ("Reached checkSpans 2" ++ (show $ any (not . isGoodSrcSpan) spans) ++ (show $ shortShowSpan <$> spans)) $ any (not . isGoodSrcSpan) spans) && (trace ("Reached checkSpans 1" ++ show (isGoodSrcSpan res) ++ shortShowSpan res) $ isGoodSrcSpan res)
       then trfProblem $ "Wrong src spans in " ++ show res
       else res

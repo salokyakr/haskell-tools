@@ -204,6 +204,9 @@ translateExtension Trustworthy = Nothing -- \df -> df { GHC.safeHaskell = GHC.Sf
 translateExtension Unsafe = Nothing -- \df -> df { GHC.safeHaskell = GHC.Sf_Unsafe }
 
 translateExtension Rank2Types = Just GHC.RankNTypes
+translateExtension BlockArguments = Just GHC.BlockArguments
+translateExtension DerivingStrategies = Just GHC.DerivingStrategies
+translateExtension EmptyDataDeriving = Just GHC.EmptyDataDeriving
 translateExtension PolymorphicComponents = Just GHC.RankNTypes
 translateExtension Generics = Nothing -- it does nothing, deprecated extension
 translateExtension NewQualifiedOperators = Nothing -- it does nothing, deprecated extension
