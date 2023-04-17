@@ -45,6 +45,8 @@ import Language.Haskell.Tools.AST (Ann, AnnMaybeG, AnnListG, getRange, Dom, Rang
 import qualified Language.Haskell.Tools.AST as AST
 import Language.Haskell.Tools.AST.SemaInfoTypes as AST (nameInfo, mkNoSemanticInfo, trfImportInfo)
 
+import Debug.Trace (trace, traceShowId)
+
 trfDecls :: (TransformName n r, n ~ GhcPass p, HasCallStack) => [LHsDecl n] -> Trf (AnnListG AST.UDecl (Dom r) RangeStage)
 trfDecls decls = addToCurrentScope decls $ makeIndentedListNewlineBefore atTheEnd (mapM trfDecl decls)
 
@@ -99,8 +101,13 @@ trfDeclsGroup g@(HsGroup _ vals splices tycls derivs fixities defaults foreigns 
 
     mergeSplice :: [Located (HsDecl n)] -> Located (HsSplice n) -> [Located (HsDecl n)]
     mergeSplice decls spl@(L spLoc@(RealSrcSpan rss) _)
-      = L spLoc (SpliceD NoExt (SpliceDecl NoExt spl ExplicitSplice)) : filter (\(L (RealSrcSpan rdsp) _) -> not (rss `containsSpan` rdsp)) decls
+      = L spLoc (SpliceD NoExt (SpliceDecl NoExt spl ExplicitSplice)) : filter (fun) decls
+      where 
+        fun (L (RealSrcSpan rdsp) _) = not (rss `containsSpan` rdsp)
+        fun (L (UnhelpfulSpan _) _) = False
     mergeSplice _ (L (UnhelpfulSpan {}) _) = convProblem "mergeSplice: no real span"
+    mergeSplice x y = trace "" $ error "Non exhaustive pattern in mergeSplice"
+
 
     getDeclsToInsert :: Trf [Ann AST.UDecl (Dom r) RangeStage]
     getDeclsToInsert = do decls <- asks declsToInsert

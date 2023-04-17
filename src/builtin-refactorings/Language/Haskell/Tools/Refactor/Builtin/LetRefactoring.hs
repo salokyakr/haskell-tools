@@ -61,6 +61,14 @@ import Control.Monad.IO.Class
 changeReturnToLetTypeRefactoring :: RefactoringChoice
 changeReturnToLetTypeRefactoring = ModuleRefactoring "changeReturnPureToLet" (localRefactoring changeReturnToLetType)
 
+projectChangePureToLetRefactoring :: RefactoringChoice
+projectChangePureToLetRefactoring = ProjectRefactoring "projectChangePureToLetRefactoring" projectPureToLetRefactoring
+
+projectPureToLetRefactoring :: ProjectRefactoring
+projectPureToLetRefactoring mods
+  = mapM (\(k, m) -> ContentChanged . (k,) <$> localRefactoringRes id m (changeReturnToLetType m)) mods
+
+
 changeReturnToLetType :: LocalRefactoring
 changeReturnToLetType moduleAST =
         do
