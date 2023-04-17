@@ -220,21 +220,18 @@ reloadModule report ms = do
   ghcfl <- gets (_ghcFlagsSet)
   let codeGen = needsGeneratedCode (keyFromMS ms) mcs
       mc = decideMC ms mcs
-  (ms', newm) <- withFlagsForModule mc $ lift $ do
+  newm <- withFlagsForModule mc $ lift $ do
     dfs <- liftIO $ fmap ghcfl $ _mcFlagSetup mc $ ms_hspp_opts ms
     let ms' = ms { ms_hspp_opts = dfs }
     let ms'' = (case codeGen of NoCodeGen -> ms'
                                 InterpretedCode -> forceCodeGen ms'
                                 GeneratedCode -> forceAsmGen ms')
-    hsc_env' <- getSession
-    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
-    let modSum = ms'' { ms_hspp_opts = dynflags' }
     -- some flags are cached in mod summary, so we need to override
-    (modSum, ) <$> parseTyped modSum
+    parseTyped ms''
   -- replace the module in the program database
-  modify' (\st -> st{_refSessMCs = map (\x -> x{_mcModules = Map.insert (keyFromMS ms') (ModuleTypeChecked newm ms' codeGen) (removeModuleMS ms' $ _mcModules x)})
+  modify' (\st -> st{_refSessMCs = map (\x -> x{_mcModules = Map.insert (keyFromMS ms) (ModuleTypeChecked newm ms codeGen) (removeModuleMS ms $ _mcModules x)})
                                    $ filter (\c -> (_mcId c) == _mcId mc) (_refSessMCs st)})
-  liftIO $ report ms'
+  liftIO $ report ms
 
 -- | Select which module collection we think the module is in
 decideMC :: ModSummary -> [ModuleCollection SourceFileKey] -> ModuleCollection SourceFileKey

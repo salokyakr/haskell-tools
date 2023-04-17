@@ -62,7 +62,7 @@ data UPattern dom stage
                    , _patternInner :: Ann UPattern dom stage
                    , _patternSumPlaceholdersAfter :: AnnListG UUnboxedSumPlaceHolder dom stage
                    } -- ^ Unboxed sum pattern (@ (# | expr #) @).
-  | UXPat
+  | UXPat          {_patternLoc :: Ann UPattern dom stage}
 
 -- Field specification of a record pattern
 data UPatternField dom stage
