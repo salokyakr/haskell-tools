@@ -36,12 +36,17 @@ import Language.Haskell.Tools.BackendGHC.Exprs (trfText')
 import Language.Haskell.Tools.BackendGHC.Monad
 import Language.Haskell.Tools.BackendGHC.Names (TransformName, trfName)
 import Language.Haskell.Tools.BackendGHC.Utils
+import Outputable
+
+showOutputable :: Outputable a => a -> String
+showOutputable = showSDocUnsafe . ppr
 
 -- Transformes a module in its renamed state. This will be performed to help the transformation of the actual typed module representation.
 trfModule :: ModSummary -> Located (HsModule GhcPs) -> Trf (Ann AST.UModule (Dom GhcPs) RangeStage)
 trfModule mod hsMod = do
   -- createModuleInfo involves reading the ghc compiler state, so it must be evaluated
   -- or large parts of the representation will be kept
+  !_ <- liftIO $ putStrLn ("HSGroup" ++ (showOutputable $ gr))
   !modInfo <- createModuleInfo mod (maybe noSrcSpan getLoc $ hsmodName $ unLoc hsMod) (hsmodImports $ unLoc hsMod)
   trfLocCorrect (pure modInfo)
      (\sr -> combineSrcSpans sr <$> (uniqueTokenAnywhere AnnEofPos))

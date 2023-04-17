@@ -99,7 +99,10 @@ trfDeclsGroup g@(HsGroup _ vals splices tycls derivs fixities defaults foreigns 
 
     mergeSplice :: [Located (HsDecl n)] -> Located (HsSplice n) -> [Located (HsDecl n)]
     mergeSplice decls spl@(L spLoc@(RealSrcSpan rss) _)
-      = L spLoc (SpliceD NoExt (SpliceDecl NoExt spl ExplicitSplice)) : filter (\(L (RealSrcSpan rdsp) _) -> not (rss `containsSpan` rdsp)) decls
+      = L spLoc (SpliceD NoExt (SpliceDecl NoExt spl ExplicitSplice)) : filter (fun) decls
+      where 
+        fun (L (RealSrcSpan rdsp) _) = not (rss `containsSpan` rdsp)
+        fun (L (UnhelpfulSpan _) _)  = False
     mergeSplice _ (L (UnhelpfulSpan {}) _) = convProblem "mergeSplice: no real span"
 
     getDeclsToInsert :: Trf [Ann AST.UDecl (Dom r) RangeStage]
