@@ -35,7 +35,7 @@ cutUpRanges n = evalState (cutUpRanges' n) [[],[]]
         trf :: HasRange (x RngTemplateStage)
             => ([SrcSpan] -> x NormRangeStage -> x RngTemplateStage) -> x NormRangeStage -> State [[SrcSpan]] (x RngTemplateStage)
         trf f ni = do stack <- get
-                      case stack of 
+                      case stack of
                         (below1 : top : xs) -> do
                           let below = filter isGoodSrcSpan below1
                           let res = f (trace ("Reached cutUpRanges 1" ++ show below) below) ni
@@ -54,7 +54,7 @@ cutOutElemSpan sps (NormNodeInfo (RealSrcSpan sp))
              -- only continue if the correct place for the child range is not found
               Just pieces -> trace "Reached cutOutElemSpan 1"  $ pieces ++ rest
               Nothing -> trace ("Reached cutOutElemSpan 2" ++ show elem) $ elem : (breakFirstHit False) rest sp
-        breakFirstHit opt sps (RealSrcSpan inner) = [RangeChildElem] --trace "Reached cutOutElemSpan 3" $ throw $ BreakUpProblem sp inner sps
+        breakFirstHit opt sps (RealSrcSpan inner) = [RangeElem inner] --trace "Reached cutOutElemSpan 3" $ throw $ BreakUpProblem sp inner sps
         breakFirstHit opt [] inner = trace ("Reached cutOutElemSpan 3" ++ show sps) $ throw $ BreakUpProblem sp inner sps
 cutOutElemSpan _ (NormNodeInfo (UnhelpfulSpan {}))
   = RangeTemplateNode (mkRealSrcSpan (mkRealSrcLoc (mkFastString "") 100 100) (mkRealSrcLoc (mkFastString "") 100 100)) [RangeChildElem]
