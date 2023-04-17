@@ -111,6 +111,7 @@ trfAssertion' t = case base of
    HsTyVar _ _ name -> AST.UClassAssert <$> trfName @n name <*> trfAnnList " " trfType' args
    -- HsEqTy t1 t2 -> AST.UInfixAssert <$> trfType t1 <*> annLocNoSema (tokenLoc AnnTilde) (trfOperator' @n typeEq) <*> trfType t2
    HsIParamTy _ name t -> AST.UImplicitAssert <$> define (focusOn (getLoc name) (trfImplicitName (unLoc name))) <*> trfType t
+   HsForAllTy _ bndrs typ -> trfAssertion' (unLoc typ)
    t -> unhandledElement "assertion" t
   where (args, _, base) = getArgs t
 
