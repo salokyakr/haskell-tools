@@ -13,6 +13,7 @@ import Language.Haskell.Tools.Refactor.Builtin.OrganizeImports (organizeImportsR
 import Language.Haskell.Tools.Refactor.Builtin.RenameDefinition (renameDefinitionRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.GetMatches (getMatchesQuery)
 import Language.Haskell.Tools.Refactor.Builtin.LetRefactoring (changeReturnToLetTypeRefactoring, projectChangePureToLetRefactoring)
+import Language.Haskell.Tools.Refactor.Builtin.ShowTree (showAstTree)
 import Language.Haskell.Tools.Refactor.Builtin.AutoCorrect
 
 builtinRefactorings :: [RefactoringChoice]
@@ -30,6 +31,7 @@ builtinRefactorings
     , autoCorrectRefactoring
     , changeReturnToLetTypeRefactoring
     , projectChangePureToLetRefactoring
+    , showAstTree
     ]
 
 builtinQueries :: [QueryChoice]

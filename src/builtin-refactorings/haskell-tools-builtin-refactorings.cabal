@@ -91,6 +91,7 @@ library
                      , Language.Haskell.Tools.Debug.Show
                      , Language.Haskell.Tools.Debug.RangeDebug
                      , Language.Haskell.Tools.Debug.RangeDebugInstances
+                     , Language.Haskell.Tools.Refactor.Builtin.ShowTree
 
   other-modules:       Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.ArrowsChecker
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.BangPatternsChecker
