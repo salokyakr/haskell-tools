@@ -31,7 +31,7 @@ That being said, let's observe the tree...
 ht-debug showTree /Users/salokya.kumar/Work/haskell-tool/poc/src/app Main
 ```
 
-TODO :: Insert SS-1
+<img width="1474" alt="ss1" src="https://github.com/salokyakr/haskell-tools/assets/129846272/de1c96a1-3954-4f01-94af-1a4d3b435e47">
 
 ```js
 UQualifiedName {_qualifiers = [], _unqualifiedName = UNamePart {_simpleNameStr = "Text"}}
