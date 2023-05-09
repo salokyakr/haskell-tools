@@ -23,6 +23,7 @@ data UName dom stage
 
 -- | Possible qualified names. Contains also implicit names.
 -- Linear implicit parameter: @%x@. Non-linear implicit parameter: @?x@.
+
 data UQualifiedName dom stage
   = UQualifiedName { _qualifiers :: AnnListG UNamePart dom stage
                    , _unqualifiedName :: Ann UNamePart dom stage

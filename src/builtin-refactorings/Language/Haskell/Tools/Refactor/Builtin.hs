@@ -14,6 +14,7 @@ import Language.Haskell.Tools.Refactor.Builtin.RenameDefinition (renameDefinitio
 import Language.Haskell.Tools.Refactor.Builtin.GetMatches (getMatchesQuery)
 import Language.Haskell.Tools.Refactor.Builtin.LetRefactoring (changeReturnToLetTypeRefactoring, projectChangePureToLetRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.ShowTree (showAstTree)
+import Language.Haskell.Tools.Refactor.Builtin.ChangeMonad (changeMonadRefactoring)
 import Language.Haskell.Tools.Refactor.Builtin.AutoCorrect
 
 builtinRefactorings :: [RefactoringChoice]
@@ -31,6 +32,7 @@ builtinRefactorings
     , autoCorrectRefactoring
     , changeReturnToLetTypeRefactoring
     , projectChangePureToLetRefactoring
+    , changeMonadRefactoring
     , showAstTree
     ]
 
