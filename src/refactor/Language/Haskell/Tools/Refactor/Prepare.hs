@@ -29,7 +29,7 @@ import Outputable (Outputable(..), showSDocUnsafe, cat, (<>))
 import Packages (initPackages)
 import SrcLoc
 import HscMain
-import StringBuffer (hGetStringBuffer)
+import StringBuffer (hGetStringBuffer, lexemeToString, StringBuffer (..))
 
 import Language.Haskell.Tools.AST as AST
 import Language.Haskell.Tools.BackendGHC
@@ -180,6 +180,9 @@ loadModule workingDir moduleName
 -- | The final version of our AST, with type infromation added
 type TypedModule = Ann AST.UModule IdDom SrcTemplateStage
 
+strBufToStr :: StringBuffer -> String
+strBufToStr sb@(StringBuffer _ len _) = lexemeToString sb len
+
 -- | Get the typed representation of a Haskell module.
 parseTyped :: ModSummary -> Ghc TypedModule
 parseTyped ms'' = do
@@ -211,7 +214,7 @@ parseTyped ms'' = do
   srcBuffer <- if hasCppExtension
                     then liftIO $ hGetStringBuffer (getModSumOrig ms'')
                     else return (fromJust $ ms_hspp_buf $ pm_mod_summary p')
-  liftIO $ print "after srcBuffer"
+  liftIO $ print $ "after srcBuffer" ++ (strBufToStr $ srcBuffer)
   x <- withTempSession (\e -> e { hsc_dflags = ms_hspp_opts ms })
     $ (if hasCppExtension then prepareASTCpp else prepareAST) srcBuffer . placeComments (fst annots) (getNormalComments $ snd annots)
         <$> (addTypeInfos (typecheckedSource tc)

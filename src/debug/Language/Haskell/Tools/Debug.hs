@@ -36,10 +36,23 @@ import Language.Haskell.Tools.PrettyPrint (prettyPrint)
 import Language.Haskell.Tools.PrettyPrint.Prepare
 import Language.Haskell.Tools.Refactor
 import Language.Haskell.Tools.Refactor.Builtin (builtinRefactorings)
+import qualified Language.Haskell.GHC.ExactPrint as EP
+import Data.Either
+import DynamicLoading (initializePlugins)
+import System.IO.Strict as StrictIO (hGetContents)
+import Data.Algorithm.Diff (Diff(..), getGroupedDiff)
+import Data.Algorithm.DiffContext (prettyContextDiff, getContextDiff)
+import System.IO
+import System.Directory
+-- import Text.PrettyPrint as PP (text, render)
+import Module (moduleNameFS, moduleNameString)
+
+demoRefactor :: String -> String -> [String] -> String -> IO ()
+demoRefactor = demoRefactor1 True
 
 -- | Should be only used for testing
-demoRefactor :: String -> String -> [String] -> String -> IO ()
-demoRefactor command workingDir args moduleName =
+demoRefactor1 :: Bool -> String -> String -> [String] -> String -> IO ()
+demoRefactor1 flag command workingDir args moduleName =
   runGhc (Just libdir) $ do
     initGhcFlags
     _ <- useFlags args
@@ -48,7 +61,13 @@ demoRefactor command workingDir args moduleName =
     liftIO $ putStrLn "=========== parsed source:"
     ms <- loadModule workingDir moduleName
 
-    p <- parseModule ms
+    ms'' <- loadModule workingDir moduleName
+    hsc_env' <- getSession
+    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
+    let modSum = ms'' { ms_hspp_opts = dynflags' }
+    let mss = modSumNormalizeFlags modSum
+
+    p <- parseModule mss
     let annots = pm_annotations $ p
     -- liftIO $ putStrLn $ show (pm_parsed_source p)
     liftIO $ putStrLn "=========== tokens:"
@@ -79,6 +98,7 @@ demoRefactor command workingDir args moduleName =
     liftIO $ putStrLn "=========== ranges fixed:"
     sourceOrigin <- if hasCPP then liftIO $ hGetStringBuffer (workingDir </> map (\case '.' -> pathSeparator; c -> c) moduleName <.> "hs")
                               else return (fromJust $ ms_hspp_buf $ pm_mod_summary p)
+                              -- else return (fromJust $ ms_hspp_buf $ pm_parsed_source p)
     let commented = fixRanges $ placeComments (fst annots) (getNormalComments $ snd annots) $ fixMainRange sourceOrigin transformed
     liftIO $ putStrLn $ srcInfoDebug commented
 
@@ -91,34 +111,74 @@ demoRefactor command workingDir args moduleName =
     liftIO $ putStrLn "=========== sourced:"
     let sourced = (if hasCPP then extractStayingElems else id) $ rangeToSource sourceOrigin cutUp
     liftIO $ putStrLn $ srcInfoDebug sourced
-    liftIO $ putStrLn "=========== pretty printed:"
-    let prettyPrinted = prettyPrint sourced
-    liftIO $ putStrLn prettyPrinted
-    transformed <- performCommand builtinRefactorings (splitOn " " command)
-                                  (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
-                                  []
-    case transformed of
-      Right changes -> do
-        forM_ changes $ \case
-          ContentChanged (mod, correctlyTransformed) -> do
-            liftIO $ putStrLn $ "=========== transformed AST (" ++ (mod ^. sfkModuleName) ++ "):"
-            liftIO $ putStrLn $ srcInfoDebug correctlyTransformed
-            liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
-            let prettyPrinted = prettyPrint correctlyTransformed
-            liftIO $ putStrLn prettyPrinted
-            liftIO $ putStrLn "==========="
-          ModuleRemoved mod -> do
-            liftIO $ putStrLn $ "=========== module removed: " ++ mod
-          ModuleCreated mod cont _ -> do
-            liftIO $ putStrLn $ "=========== created AST (" ++ mod ++ "):"
-            liftIO $ putStrLn $ srcInfoDebug cont
-            liftIO $ putStrLn $ "=========== created & prettyprinted (" ++ mod ++ "):"
-            let prettyPrinted = prettyPrint cont
-            liftIO $ putStrLn prettyPrinted
-      Left transformProblem -> do
-        liftIO $ putStrLn "==========="
-        liftIO $ putStrLn transformProblem
-        liftIO $ putStrLn "==========="
+
+
+    ms'' <- loadModule workingDir moduleName
+    hsc_env' <- getSession
+    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
+    let modSum = ms'' { ms_hspp_opts = dynflags' }
+    let mss = modSumNormalizeFlags modSum
+    pp <- parseModule mss
+    liftIO $ print $ "after parse: dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary  pp))
+    liftIO $ print $ "ast parse PP: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source pp)
+    -- prettyPrint <$> parseTyped mss
+    -- liftIO $ withBinaryFile moduleName WriteMode $ \handle -> do
+    --       hSetEncoding handle utf8
+    --       hPutStr handle (showSDocUnsafe $ ppr $ pm_parsed_source pp)
+    --       hFlush handle
+
+    let hasCppExtension = Cpp `xopt` ms_hspp_opts modSum
+    srcBuffer <- if hasCppExtension
+                    then liftIO $ hGetStringBuffer (getModSumOrig mss)
+                    else return (fromJust $ ms_hspp_buf $ pm_mod_summary pp)
+    -- liftIO $ print $ "after srcBuffer" ++ (head $ (splitOn "module" (strBufToStr $ srcBuffer)))
+    let pragmas = ((head $ (splitOn "module" (strBufToStr $ srcBuffer))))
+        x       = ((head $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source pp))))
+        y       = ((last $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source pp))))
+    if flag then do
+      liftIO $ writeToFile workingDir (moduleName ++ ".hs") (pragmas ++ x ++ "\nimport qualified GHC.Records.Extra\n" ++ y)
+      liftIO $ demoRefactor1 False command workingDir args moduleName
+    else 
+      liftIO $ print $ "False Case"
+    -- liftIO $ putStrLn "=========== pretty printed:"
+    -- let prettyPrinted = prettyPrint sourced
+    -- liftIO $ putStrLn $ "prettyPrint sourced" ++ (prettyPrinted)
+    -- liftIO $ putStrLn prettyPrinted
+    -- transformed <- performCommand builtinRefactorings (splitOn " " command)
+    --                               (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
+    --                               []
+    -- case transformed of
+    --   Right changes -> do
+    --     forM_ changes $ \case
+    --       ContentChanged (mod, correctlyTransformed) -> do
+    --         liftIO $ putStrLn $ "=========== transformed AST (" ++ (mod ^. sfkModuleName) ++ "):"
+    --         liftIO $ putStrLn $ srcInfoDebug correctlyTransformed
+    --         liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
+    --         let prettyPrinted = prettyPrint correctlyTransformed
+    --         liftIO $ putStrLn prettyPrinted
+    --         liftIO $ putStrLn "==========="
+    --       ModuleRemoved mod -> do
+    --         liftIO $ putStrLn $ "=========== module removed: " ++ mod
+    --       ModuleCreated mod cont _ -> do
+    --         liftIO $ putStrLn $ "=========== created AST (" ++ mod ++ "):"
+    --         liftIO $ putStrLn $ srcInfoDebug cont
+    --         liftIO $ putStrLn $ "=========== created & prettyprinted (" ++ mod ++ "):"
+    --         let prettyPrinted = prettyPrint cont
+    --         liftIO $ putStrLn prettyPrinted
+    --   Left transformProblem -> do
+    --     liftIO $ putStrLn "==========="
+    --     liftIO $ putStrLn transformProblem
+    --     liftIO $ putStrLn "==========="
+
+writeToFile tdir file str = do 
+  setCurrentDirectory tdir
+  liftIO $ withBinaryFile file WriteMode $ \handle -> do
+              hSetEncoding handle utf8
+              hPutStr handle str
+              hFlush handle
+  return ()
+
+-- call as ::  writeToFile workingDir moduleName _
 
 deriving instance Generic SrcSpan
 deriving instance Generic (NodeInfo sema src)

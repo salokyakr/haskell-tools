@@ -41,5 +41,5 @@ rmDefaultIncludes fp = unlines . tail
 preprocessedSrc :: ModSummary -> String
 preprocessedSrc = maybe "" strBufToStr . ms_hspp_buf
 
-strBufToStr :: StringBuffer -> String
-strBufToStr sb@(StringBuffer _ len _) = lexemeToString sb len
+-- strBufToStr :: StringBuffer -> String
+-- strBufToStr sb@(StringBuffer _ len _) = lexemeToString sb len

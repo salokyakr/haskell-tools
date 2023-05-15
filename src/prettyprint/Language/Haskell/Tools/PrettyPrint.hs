@@ -18,6 +18,8 @@ import Data.List as List
 import Data.List.Split (splitOn)
 import Data.Sequence hiding (null, replicate)
 
+import Debug.Trace (trace)
+
 -- | Pretty prints an AST by using source templates stored as node info
 prettyPrint :: (SourceInfoTraversal node) => node dom SrcTemplateStage -> String
 prettyPrint = toList . printRose . toRoseTree
@@ -39,8 +41,8 @@ printRose' parent (RoseTree (RoseSpan (SourceTemplateNode rng elems minInd relIn
              where txt = concatMap (^. sourceTemplateText) txtElems
            printTemplateElems (ChildElem : rest) (child : children) = printRose' parent child >+< printTemplateElems rest children
            printTemplateElems [] [] = return empty
-           printTemplateElems _ []
-             = pprProblem $ "More child elem in template than actual children in: "
+           printTemplateElems x []
+             = trace ("DEBUG :: " ++ (show x)) $ pprProblem $ "More child elem in template than actual children in: "
                               ++ shortShowSpanWithFile (srcLocSpan $ RealSrcLoc parent)
            printTemplateElems [] _
              = return empty
