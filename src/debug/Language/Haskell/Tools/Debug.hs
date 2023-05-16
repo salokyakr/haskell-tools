@@ -46,6 +46,7 @@ import Data.Algorithm.DiffContext (prettyContextDiff, getContextDiff)
 import System.IO
 import System.Directory
 import Text.PrettyPrint as PP (text, render)
+import Text.PrettyPrint as PP (text, render)
 import Module (moduleNameFS, moduleNameString)
 import Debug.Trace (trace)
 
@@ -81,6 +82,7 @@ demoRefactor1 flag command workingDir args moduleName =
         liftIO $ putStrLn $ "Loads RecordDotPreprocessor..."
 
     liftIO $ putStrLn "=========== parsed source:"
+
     ms <- loadModule workingDir moduleName
     hsc_env' <- getSession
     dynflags' <- if flag == 1 then liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms))

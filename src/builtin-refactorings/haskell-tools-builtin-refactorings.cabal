@@ -93,6 +93,7 @@ library
                      , Language.Haskell.Tools.Debug.RangeDebugInstances
                      , Language.Haskell.Tools.Refactor.Builtin.ShowTree
                      , Language.Haskell.Tools.Refactor.Builtin.ChangeMonad
+                     , Language.Haskell.Tools.Refactor.Builtin.WriteBack
 
   other-modules:       Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.ArrowsChecker
                      , Language.Haskell.Tools.Refactor.Builtin.ExtensionOrganizer.Checkers.BangPatternsChecker
