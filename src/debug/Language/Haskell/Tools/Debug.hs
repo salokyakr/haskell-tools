@@ -51,7 +51,12 @@ import Debug.Trace (trace)
 demoRefactor :: String -> String -> [String] -> String -> IO ()
 demoRefactor = demoRefactor1 1
 
--- | Should be only used for testing
+removeDynFlag :: DynFlags -> DynFlags
+-- removeDynFlag dyn = trace ("printing dynflags :: " ++ (showOutputable $ pluginModNames dyn)) $ dyn 
+removeDynFlag dyn = let oldPlugins = pluginModNames dyn
+                        newPlugins = filter (\x -> x /= GHC.mkModuleName "RecordDotPreprocessor") oldPlugins 
+                    in dyn {pluginModNames = newPlugins}
+
 demoRefactor1 :: Int -> String -> String -> [String] -> String -> IO ()
 demoRefactor1 flag command workingDir args moduleName =
   runGhc (Just libdir) $ do
@@ -59,14 +64,24 @@ demoRefactor1 flag command workingDir args moduleName =
     _ <- useFlags args
     useDirs [workingDir]
 
+    if flag == 2 || flag == 3 then do
+          cdf <- getSessionDynFlags
+          let ndf = removeDynFlag cdf
+          setSessionDynFlags ndf  
+          return ()
+      else 
+        liftIO $ putStrLn $ "Loads RecordDotPreprocessor..."
+
     liftIO $ putStrLn "=========== parsed source:"
     ms <- loadModule workingDir moduleName
     hsc_env' <- getSession
-    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms))
-    let modSum = if flag == 1 
-                    then ms { ms_hspp_opts = dynflags' } 
-                 else ms
-    -- let modSum = ms { ms_hspp_opts = dynflags' } 
+    dynflags' <- if flag == 1 then liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms))
+                 else if flag == 2 || flag == 3 then liftIO (initializePlugins hsc_env' (removeDynFlag $ GHC.ms_hspp_opts ms))
+                 else liftIO (initializePlugins hsc_env' (removeDynFlag $ GHC.ms_hspp_opts ms))
+    -- let modSum = if flag == 1 
+    --                 then ms { ms_hspp_opts = dynflags' } 
+    --              else ms
+    let modSum = ms { ms_hspp_opts = dynflags' } 
     let mss = modSumNormalizeFlags modSum
 
     p <- parseModule mss
@@ -123,45 +138,40 @@ demoRefactor1 flag command workingDir args moduleName =
     if flag == 1 then do
       liftIO $ writeToFile workingDir (moduleName ++ ".hs") fileData
       liftIO $ demoRefactor1 2 command workingDir args moduleName
+      
     else if flag == 2 then do
       liftIO $ print $ "Refactor Case"
-      -- TODO :: Add Refactor Fn
+      transformed <- performCommand builtinRefactorings (splitOn " " command)
+                                    (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
+                                    []
+      case transformed of
+        Right changes -> do
+          forM_ changes $ \case
+            ContentChanged (mod, correctlyTransformed) -> do
+              liftIO $ putStrLn $ "=========== transformed AST (" ++ (mod ^. sfkModuleName) ++ "):"
+              liftIO $ putStrLn $ srcInfoDebug correctlyTransformed
+              liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
+              let prettyPrinted = prettyPrint correctlyTransformed
+              liftIO $ putStrLn prettyPrinted
+              liftIO $ putStrLn $ "=========== Write into file (" ++ (mod ^. sfkModuleName) ++ "):"
+              liftIO $ applyChanges correctlyTransformed mod workingDir
+              liftIO $ putStrLn "==========="
+            ModuleRemoved mod -> do
+              liftIO $ putStrLn $ "=========== module removed: " ++ mod
+            ModuleCreated mod cont _ -> do
+              liftIO $ putStrLn $ "=========== created AST (" ++ mod ++ "):"
+              liftIO $ putStrLn $ srcInfoDebug cont
+              liftIO $ putStrLn $ "=========== created & prettyprinted (" ++ mod ++ "):"
+              let prettyPrinted = prettyPrint cont
+              liftIO $ putStrLn prettyPrinted
+        Left transformProblem -> do
+          liftIO $ putStrLn "==========="
+          liftIO $ putStrLn transformProblem
+          liftIO $ putStrLn "==========="
+      liftIO $ demoRefactor1 3 command workingDir args moduleName
     else 
       -- write back to (.)
       liftIO $ print $ "Write-Back Case"
-
-
-    -- TODO :: Add extra newLine for each newLine
-
-    -- liftIO $ putStrLn "=========== pretty printed:"
-    -- let prettyPrinted = prettyPrint sourced
-    -- liftIO $ putStrLn $ "prettyPrint sourced" ++ (prettyPrinted)
-    -- liftIO $ putStrLn prettyPrinted
-    -- transformed <- performCommand builtinRefactorings (splitOn " " command)
-    --                               (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
-    --                               []
-    -- case transformed of
-    --   Right changes -> do
-    --     forM_ changes $ \case
-    --       ContentChanged (mod, correctlyTransformed) -> do
-    --         liftIO $ putStrLn $ "=========== transformed AST (" ++ (mod ^. sfkModuleName) ++ "):"
-    --         liftIO $ putStrLn $ srcInfoDebug correctlyTransformed
-    --         liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
-    --         let prettyPrinted = prettyPrint correctlyTransformed
-    --         liftIO $ putStrLn prettyPrinted
-    --         liftIO $ putStrLn "==========="
-    --       ModuleRemoved mod -> do
-    --         liftIO $ putStrLn $ "=========== module removed: " ++ mod
-    --       ModuleCreated mod cont _ -> do
-    --         liftIO $ putStrLn $ "=========== created AST (" ++ mod ++ "):"
-    --         liftIO $ putStrLn $ srcInfoDebug cont
-    --         liftIO $ putStrLn $ "=========== created & prettyprinted (" ++ mod ++ "):"
-    --         let prettyPrinted = prettyPrint cont
-    --         liftIO $ putStrLn prettyPrinted
-    --   Left transformProblem -> do
-    --     liftIO $ putStrLn "==========="
-    --     liftIO $ putStrLn transformProblem
-    --     liftIO $ putStrLn "==========="
 
 writeToFile tdir file str = do 
   setCurrentDirectory tdir
