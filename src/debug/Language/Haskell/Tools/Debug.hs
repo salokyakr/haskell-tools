@@ -44,14 +44,16 @@ import Data.Algorithm.Diff (Diff(..), getGroupedDiff)
 import Data.Algorithm.DiffContext (prettyContextDiff, getContextDiff)
 import System.IO
 import System.Directory
--- import Text.PrettyPrint as PP (text, render)
+import Text.PrettyPrint as PP (text, render)
 import Module (moduleNameFS, moduleNameString)
+-- import Data.List.Utils (replace)
+import Debug.Trace (trace)
 
 demoRefactor :: String -> String -> [String] -> String -> IO ()
-demoRefactor = demoRefactor1 True
+demoRefactor = demoRefactor1 1
 
 -- | Should be only used for testing
-demoRefactor1 :: Bool -> String -> String -> [String] -> String -> IO ()
+demoRefactor1 :: Int -> String -> String -> [String] -> String -> IO ()
 demoRefactor1 flag command workingDir args moduleName =
   runGhc (Just libdir) $ do
     initGhcFlags
@@ -60,28 +62,29 @@ demoRefactor1 flag command workingDir args moduleName =
 
     liftIO $ putStrLn "=========== parsed source:"
     ms <- loadModule workingDir moduleName
-
-    ms'' <- loadModule workingDir moduleName
     hsc_env' <- getSession
-    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
-    let modSum = ms'' { ms_hspp_opts = dynflags' }
+    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms))
+    let modSum = if flag == 1 
+                    then ms { ms_hspp_opts = dynflags' } 
+                 else ms
+    -- let modSum = ms { ms_hspp_opts = dynflags' } 
     let mss = modSumNormalizeFlags modSum
 
     p <- parseModule mss
     let annots = pm_annotations $ p
     -- liftIO $ putStrLn $ show (pm_parsed_source p)
-    liftIO $ putStrLn "=========== tokens:"
+    -- liftIO $ putStrLn "=========== tokens:"
     -- liftIO $ putStrLn $ show (fst annots)
-    liftIO $ putStrLn "=========== comments:"
+    -- liftIO $ putStrLn "=========== comments:"
     -- liftIO $ putStrLn $ show (snd annots)
-    liftIO $ putStrLn "=========== renamed source:"
+    -- liftIO $ putStrLn "=========== renamed source:"
 
     (rnSrc, tcSrc) <- ((\t -> (tm_renamed_source t, typecheckedSource t)) <$> typecheckModule p)
                          `gcatch` \(e :: SomeException) -> forcedTypecheck ms p
     -- liftIO $ putStrLn $ show rnSrc
 
     -- liftIO $ putStrLn $ show (fromJust $ tm_renamed_source t)
-    liftIO $ putStrLn "=========== typechecked source:"
+    -- liftIO $ putStrLn "=========== typechecked source:"
     -- liftIO $ putStrLn $ show tcSrc
 
     let hasCPP = Cpp `xopt` ms_hspp_opts ms
@@ -112,34 +115,32 @@ demoRefactor1 flag command workingDir args moduleName =
     let sourced = (if hasCPP then extractStayingElems else id) $ rangeToSource sourceOrigin cutUp
     liftIO $ putStrLn $ srcInfoDebug sourced
 
-
-    ms'' <- loadModule workingDir moduleName
-    hsc_env' <- getSession
-    dynflags' <- liftIO (initializePlugins hsc_env' (GHC.ms_hspp_opts ms''))
-    let modSum = ms'' { ms_hspp_opts = dynflags' }
-    let mss = modSumNormalizeFlags modSum
-    pp <- parseModule mss
-    liftIO $ print $ "after parse: dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary  pp))
-    liftIO $ print $ "ast parse PP: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source pp)
-    -- prettyPrint <$> parseTyped mss
-    -- liftIO $ withBinaryFile moduleName WriteMode $ \handle -> do
-    --       hSetEncoding handle utf8
-    --       hPutStr handle (showSDocUnsafe $ ppr $ pm_parsed_source pp)
-    --       hFlush handle
+    liftIO $ print $ "after parse: dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary p))
+    liftIO $ print $ "ast parse PP: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
 
     let hasCppExtension = Cpp `xopt` ms_hspp_opts modSum
     srcBuffer <- if hasCppExtension
                     then liftIO $ hGetStringBuffer (getModSumOrig mss)
-                    else return (fromJust $ ms_hspp_buf $ pm_mod_summary pp)
-    -- liftIO $ print $ "after srcBuffer" ++ (head $ (splitOn "module" (strBufToStr $ srcBuffer)))
+                    else return (fromJust $ ms_hspp_buf $ pm_mod_summary p)
     let pragmas = ((head $ (splitOn "module" (strBufToStr $ srcBuffer))))
-        x       = ((head $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source pp))))
-        y       = ((last $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source pp))))
-    if flag then do
-      liftIO $ writeToFile workingDir (moduleName ++ ".hs") (pragmas ++ x ++ "\nimport qualified GHC.Records.Extra\n" ++ y)
-      liftIO $ demoRefactor1 False command workingDir args moduleName
+        x       = ((head $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source p))))
+        y       = ((last $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source p))))
+
+    let fileData = (pragmas ++ x ++ "\nimport qualified GHC.Records.Extra\n" ++ y)
+
+    if flag == 1 then do
+      liftIO $ writeToFile workingDir (moduleName ++ ".hs") fileData
+      liftIO $ demoRefactor1 2 command workingDir args moduleName
+    else if flag == 2 then do
+      -- refactor logic
+      liftIO $ print $ "Refactor Case"
     else 
-      liftIO $ print $ "False Case"
+      -- write back to (.)
+      liftIO $ print $ "Write-Back Case"
+
+
+    -- TODO :: Add extra newLine for each newLine
+
     -- liftIO $ putStrLn "=========== pretty printed:"
     -- let prettyPrinted = prettyPrint sourced
     -- liftIO $ putStrLn $ "prettyPrint sourced" ++ (prettyPrinted)
@@ -177,6 +178,26 @@ writeToFile tdir file str = do
               hPutStr handle str
               hFlush handle
   return ()
+
+-- Function Apply Changes
+-- applyChanges cmod mod tdir = do
+--           let m = cmod 
+--               n = mod
+--               diffMode = False
+--           setCurrentDirectory tdir
+--           let newCont = prettyPrint m
+--               file = n ^. sfkFileName
+--           origCont <- liftIO $ withBinaryFile file ReadMode $ \handle -> do
+--             hSetEncoding handle utf8
+--             StrictIO.hGetContents handle
+--           let undo = createUndo 0 $ getGroupedDiff origCont newCont
+--           let unifiedDiff = createUnifiedDiff file origCont newCont
+--           when (not diffMode) $ do
+--             liftIO $ withBinaryFile file WriteMode $ \handle -> do
+--               hSetEncoding handle utf8
+--               hPutStr handle newCont
+--               hFlush handle
+--           return ()
 
 -- call as ::  writeToFile workingDir moduleName _
 
