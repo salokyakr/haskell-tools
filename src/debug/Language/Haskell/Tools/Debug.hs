@@ -46,7 +46,6 @@ import System.IO
 import System.Directory
 import Text.PrettyPrint as PP (text, render)
 import Module (moduleNameFS, moduleNameString)
--- import Data.List.Utils (replace)
 import Debug.Trace (trace)
 
 demoRefactor :: String -> String -> [String] -> String -> IO ()
@@ -72,25 +71,11 @@ demoRefactor1 flag command workingDir args moduleName =
 
     p <- parseModule mss
     let annots = pm_annotations $ p
-    -- liftIO $ putStrLn $ show (pm_parsed_source p)
-    -- liftIO $ putStrLn "=========== tokens:"
-    -- liftIO $ putStrLn $ show (fst annots)
-    -- liftIO $ putStrLn "=========== comments:"
-    -- liftIO $ putStrLn $ show (snd annots)
-    -- liftIO $ putStrLn "=========== renamed source:"
-
     (rnSrc, tcSrc) <- ((\t -> (tm_renamed_source t, typecheckedSource t)) <$> typecheckModule p)
                          `gcatch` \(e :: SomeException) -> forcedTypecheck ms p
-    -- liftIO $ putStrLn $ show rnSrc
-
-    -- liftIO $ putStrLn $ show (fromJust $ tm_renamed_source t)
-    -- liftIO $ putStrLn "=========== typechecked source:"
-    -- liftIO $ putStrLn $ show tcSrc
 
     let hasCPP = Cpp `xopt` ms_hspp_opts ms
-
     liftIO $ putStrLn "=========== parsed:"
-    --transformed <- runTrf (fst annots) (getPragmaComments $ snd annots) $ trfModule (pm_parsed_source p)
     parseTrf <- runTrf (fst annots) (getPragmaComments $ snd annots) $ trfModule ms (pm_parsed_source p)
     liftIO $ putStrLn $ srcInfoDebug parseTrf
 
@@ -101,7 +86,6 @@ demoRefactor1 flag command workingDir args moduleName =
     liftIO $ putStrLn "=========== ranges fixed:"
     sourceOrigin <- if hasCPP then liftIO $ hGetStringBuffer (workingDir </> map (\case '.' -> pathSeparator; c -> c) moduleName <.> "hs")
                               else return (fromJust $ ms_hspp_buf $ pm_mod_summary p)
-                              -- else return (fromJust $ ms_hspp_buf $ pm_parsed_source p)
     let commented = fixRanges $ placeComments (fst annots) (getNormalComments $ snd annots) $ fixMainRange sourceOrigin transformed
     liftIO $ putStrLn $ srcInfoDebug commented
 
@@ -115,25 +99,33 @@ demoRefactor1 flag command workingDir args moduleName =
     let sourced = (if hasCPP then extractStayingElems else id) $ rangeToSource sourceOrigin cutUp
     liftIO $ putStrLn $ srcInfoDebug sourced
 
-    liftIO $ print $ "after parse: dynflags: " ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary p))
-    liftIO $ print $ "ast parse PP: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
+    liftIO $ print $ "Dynflags :: "  ++ show (moduleNameFS <$> pluginModNames (ms_hspp_opts $ pm_mod_summary p))
+    liftIO $ print $ "AST Parse :: " ++ (showSDocUnsafe $ ppr $ pm_parsed_source p)
 
     let hasCppExtension = Cpp `xopt` ms_hspp_opts modSum
     srcBuffer <- if hasCppExtension
                     then liftIO $ hGetStringBuffer (getModSumOrig mss)
                     else return (fromJust $ ms_hspp_buf $ pm_mod_summary p)
+
+    -- removing (implicit) as it causes parse error 
     let pragmas = ((head $ (splitOn "module" (strBufToStr $ srcBuffer))))
         x       = ((head $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source p))))
         y       = ((last $ (splitOn "import (implicit) qualified GHC.Records.Extra" (showSDocUnsafe $ ppr $ pm_parsed_source p))))
 
+    -- adding 'import qualified GHC.Records.Extra' back to import list without '(implicit)' 
     let fileData = (pragmas ++ x ++ "\nimport qualified GHC.Records.Extra\n" ++ y)
+    -- TODO :: Add extra newLine
+    -- liftIO $ putStrLn $ ("fileData :: " ++ fileData)
+        -- finalStr   = replace "\n " "UNIQUE" fileData
+        -- finalStr'  = replace "\n" "\n\n" finalStr
+        -- finalStr'' = replace "UNIQUE" "\n " finalStr'
 
     if flag == 1 then do
       liftIO $ writeToFile workingDir (moduleName ++ ".hs") fileData
       liftIO $ demoRefactor1 2 command workingDir args moduleName
     else if flag == 2 then do
-      -- refactor logic
       liftIO $ print $ "Refactor Case"
+      -- TODO :: Add Refactor Fn
     else 
       -- write back to (.)
       liftIO $ print $ "Write-Back Case"
@@ -180,26 +172,40 @@ writeToFile tdir file str = do
   return ()
 
 -- Function Apply Changes
--- applyChanges cmod mod tdir = do
---           let m = cmod 
---               n = mod
---               diffMode = False
---           setCurrentDirectory tdir
---           let newCont = prettyPrint m
---               file = n ^. sfkFileName
---           origCont <- liftIO $ withBinaryFile file ReadMode $ \handle -> do
---             hSetEncoding handle utf8
---             StrictIO.hGetContents handle
---           let undo = createUndo 0 $ getGroupedDiff origCont newCont
---           let unifiedDiff = createUnifiedDiff file origCont newCont
---           when (not diffMode) $ do
---             liftIO $ withBinaryFile file WriteMode $ \handle -> do
---               hSetEncoding handle utf8
---               hPutStr handle newCont
---               hFlush handle
---           return ()
+applyChanges cmod mod tdir = do
+          let m = cmod 
+              n = mod
+              diffMode = False
+          setCurrentDirectory tdir
+          let newCont = prettyPrint m
+              file = n ^. sfkFileName
+          origCont <- liftIO $ withBinaryFile file ReadMode $ \handle -> do
+            hSetEncoding handle utf8
+            StrictIO.hGetContents handle
+          let undo = createUndo 0 $ getGroupedDiff origCont newCont
+          let unifiedDiff = createUnifiedDiff file origCont newCont
+          when (not diffMode) $ do
+            liftIO $ withBinaryFile file WriteMode $ \handle -> do
+              hSetEncoding handle utf8
+              hPutStr handle newCont
+              hFlush handle
+          return ()
 
--- call as ::  writeToFile workingDir moduleName _
+-- | Creates a compressed set of changes in one file
+createUndo :: Eq a => Int -> [Diff [a]] -> [(Int, Int, [a])]
+createUndo i (Both str _ : rest) = createUndo (i + length str) rest
+createUndo i (First rem : Second add : rest)
+  = (i, i + length add, rem) : createUndo (i + length add) rest
+createUndo i (First rem : rest) = (i, i, rem) : createUndo i rest
+createUndo i (Second add : rest)
+  = (i, i + length add, []) : createUndo (i + length add) rest
+createUndo _ [] = []
+
+-- | Creates a unified-style diff of two texts. Only used when the user wants to know what would change.
+createUnifiedDiff :: FilePath -> String -> String -> String
+createUnifiedDiff name left right
+  = render $ prettyContextDiff (PP.text name) (PP.text name) PP.text $ getContextDiff 3 (lines left) (lines right)
+
 
 deriving instance Generic SrcSpan
 deriving instance Generic (NodeInfo sema src)
