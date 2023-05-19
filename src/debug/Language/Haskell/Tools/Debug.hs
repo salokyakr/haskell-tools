@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Reference ((^.))
 import Data.List.Split (splitOn)
+import Data.List.Extra (replace)
 import Data.Maybe (Maybe(..), fromJust)
 import GHC.Generics (Generic(..))
 import System.FilePath (pathSeparator, (</>), (<.>))
@@ -129,6 +130,7 @@ demoRefactor1 flag command workingDir args moduleName =
 
     -- adding 'import qualified GHC.Records.Extra' back to import list without '(implicit)' 
     let fileData = (pragmas ++ x ++ "\nimport qualified GHC.Records.Extra\n" ++ y)
+        newFileData = replace "hasField r\n    =" "hasField r\n    = undefined --" fileData
     -- TODO :: Add extra newLine
     -- liftIO $ putStrLn $ ("fileData :: " ++ fileData)
         -- finalStr   = replace "\n " "UNIQUE" fileData
@@ -136,9 +138,8 @@ demoRefactor1 flag command workingDir args moduleName =
         -- finalStr'' = replace "UNIQUE" "\n " finalStr'
 
     if flag == 1 then do
-      liftIO $ writeToFile workingDir (moduleName ++ ".hs") fileData
+      liftIO $ writeToFile workingDir (moduleName ++ ".hs") newFileData
       liftIO $ demoRefactor1 2 command workingDir args moduleName
-      
     else if flag == 2 then do
       liftIO $ print $ "Refactor Case"
       transformed <- performCommand builtinRefactorings (splitOn " " command)
