@@ -52,12 +52,18 @@ import Debug.Trace (trace)
 demoRefactor :: String -> String -> [String] -> String -> IO ()
 demoRefactor = demoRefactor1 1
 
+-- Helper Fn to remove 'RecordDotPreprocessor' while reloading & writing back
+-- else it will cause duplicate instance error
 removeDynFlag :: DynFlags -> DynFlags
 -- removeDynFlag dyn = trace ("printing dynflags :: " ++ (showOutputable $ pluginModNames dyn)) $ dyn 
 removeDynFlag dyn = let oldPlugins = pluginModNames dyn
                         newPlugins = filter (\x -> x /= GHC.mkModuleName "RecordDotPreprocessor") oldPlugins 
                     in dyn {pluginModNames = newPlugins}
 
+-- Here first param (Int) is used as flag
+-- flag = 1 -> loads module for first time & converts '.' to 'GHC.Records.Extra.getField'
+-- flag = 2 -> relaods back the module for refactoring
+-- flag = 3 -> revert the changes done when flag = 1
 demoRefactor1 :: Int -> String -> String -> [String] -> String -> IO ()
 demoRefactor1 flag command workingDir args moduleName =
   runGhc (Just libdir) $ do
@@ -65,6 +71,7 @@ demoRefactor1 flag command workingDir args moduleName =
     _ <- useFlags args
     useDirs [workingDir]
 
+    -- loads 'RecordDotPreprocessor' only one time 
     if flag == 2 || flag == 3 then do
           cdf <- getSessionDynFlags
           let ndf = removeDynFlag cdf
@@ -173,6 +180,37 @@ demoRefactor1 flag command workingDir args moduleName =
     else 
       -- write back to (.)
       liftIO $ print $ "Write-Back Case"
+    -- 'writeBack' refactoring Fn converts 'GHC.Records.Extra.getField' to '.'
+    -- gets invoked when flag == 3
+    if flag == 3 then do
+      transformed <- performCommand builtinRefactorings (splitOn " " "writeBack")
+                                    (Right ((SourceFileKey (moduleSourceFile moduleName) moduleName), sourced))
+                                    []
+      case transformed of
+        Right changes -> do
+          forM_ changes $ \case
+            ContentChanged (mod, correctlyTransformed) -> do
+              liftIO $ putStrLn $ "=========== transformed AST (" ++ (mod ^. sfkModuleName) ++ "):"
+              liftIO $ putStrLn $ srcInfoDebug correctlyTransformed
+              liftIO $ putStrLn $ "=========== transformed & prettyprinted (" ++ (mod ^. sfkModuleName) ++ "):"
+              let prettyPrinted = prettyPrint correctlyTransformed
+              liftIO $ putStrLn prettyPrinted
+              liftIO $ putStrLn $ "=========== Write into file (" ++ (mod ^. sfkModuleName) ++ "):"
+              liftIO $ applyChanges correctlyTransformed mod workingDir
+              liftIO $ putStrLn "==========="
+            ModuleRemoved mod -> do
+              liftIO $ putStrLn $ "=========== module removed: " ++ mod
+            ModuleCreated mod cont _ -> do
+              liftIO $ putStrLn $ "=========== created AST (" ++ mod ++ "):"
+              liftIO $ putStrLn $ srcInfoDebug cont
+              liftIO $ putStrLn $ "=========== created & prettyprinted (" ++ mod ++ "):"
+              let prettyPrinted = prettyPrint cont
+              liftIO $ putStrLn prettyPrinted
+        Left transformProblem -> do
+          liftIO $ putStrLn "==========="
+          liftIO $ putStrLn transformProblem
+          liftIO $ putStrLn "==========="
+    else return ()
 
 writeToFile tdir file str = do 
   setCurrentDirectory tdir
